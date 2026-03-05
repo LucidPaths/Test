@@ -7,6 +7,7 @@ import { CurrencyDisplay } from './components/CurrencyDisplay'
 import { useSavingsStore } from './stores/savingsStore'
 import { useCharacterStore } from './stores/characterStore'
 import { useGameStore } from './stores/gameStore'
+import { useEquipmentStore } from './stores/equipmentStore'
 
 type Tab = 'game' | 'learn' | 'portfolio'
 
@@ -28,13 +29,16 @@ function App() {
   const recalculate = useCharacterStore((s) => s.recalculate)
   const spawnEnemy = useGameStore((s) => s.spawnEnemy)
   const resetCombat = useGameStore((s) => s.resetCombat)
+  const fullResetEquipment = useEquipmentStore((s) => s.fullReset)
 
   const currentSimAge = age + Math.floor(simulatedMonths / 12)
+
+  const stage = useEquipmentStore((s) => s.stage)
 
   // Initialize character from persisted savings on mount
   useEffect(() => {
     recalculate(balance, products)
-    spawnEnemy(level || 1)
+    spawnEnemy(stage || 1)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Show onboarding if the user hasn't started yet
@@ -63,6 +67,7 @@ function App() {
               resetGame()
               recalculate(0, [])
               resetCombat()
+              fullResetEquipment()
             }}
             className="font-pixel text-[7px] text-rpg-accent border border-rpg-accent/30 rounded px-1.5 py-0.5 cursor-pointer hover:bg-rpg-accent/20 transition-colors"
           >
