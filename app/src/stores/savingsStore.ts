@@ -101,7 +101,9 @@ export const useSavingsStore = create<SavingsStore>()(
       resetGame: () =>
         set({
           started: false,
+          age: 18,
           balance: 0,
+          monthlyContribution: 100,
           simulatedMonths: 0,
           transactions: [],
           lastSimTick: Date.now(),
