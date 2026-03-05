@@ -14,7 +14,6 @@ import { useCharacterStore } from '../../stores/characterStore'
  */
 function useSavingsSimulation() {
   const simulateTick = useSavingsStore((s) => s.simulateTick)
-  const products = useSavingsStore((s) => s.products)
   const recalculate = useCharacterStore((s) => s.recalculate)
   const intervalRef = useRef<ReturnType<typeof setInterval>>(null)
 

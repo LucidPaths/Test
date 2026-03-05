@@ -31,7 +31,8 @@ interface SavingsStore {
 }
 
 // Blended annual rate from active products, fallback to German savings baseline
-function getBlendedRate(products: FinancialProduct[]): number {
+// Single source of truth — also used by CompoundCurve for projection
+export function getBlendedRate(products: FinancialProduct[]): number {
   const active = products.filter((p) => p.active)
   if (active.length === 0) return 0.02 // German Tagesgeld baseline ~2%
   // Weighted blend: if you have ETF + Sparplan, rates combine

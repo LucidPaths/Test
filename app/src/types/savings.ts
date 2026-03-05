@@ -19,10 +19,3 @@ export interface FinancialProduct {
   buffValue: number
   active: boolean
 }
-
-export interface SavingsState {
-  balance: number
-  monthlyContribution: number
-  transactions: Transaction[]
-  products: FinancialProduct[]
-}

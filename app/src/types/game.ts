@@ -13,10 +13,3 @@ export interface DamageNumber {
   timestamp: number
 }
 
-export interface GameState {
-  enemy: Enemy
-  damageNumbers: DamageNumber[]
-  isIdle: boolean
-  lastTick: number
-  enemiesDefeated: number
-}

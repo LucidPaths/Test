@@ -3,7 +3,7 @@ export interface Buff {
   name: string
   icon: string
   description: string
-  stat: 'attack' | 'defense' | 'critChance' | 'xpMultiplier' | 'allStats'
+  stat: 'attack' | 'defense' | 'critChance' | 'allStats'
   value: number
   source: 'milestone' | 'product'
 }
