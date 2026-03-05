@@ -33,6 +33,16 @@ export function CompoundCurve() {
     [balance, monthlyContribution, annualRate, totalMonths]
   )
 
+  // Dynamic Y-axis: show a meaningful range around current data
+  const yMax = useMemo(() => {
+    if (data.length === 0) return 1000
+    const maxBalance = Math.max(...data.map((d) => d.balance))
+    // Round up to a nice number, always show at least up to 110K if close
+    if (maxBalance >= 90_000) return 110_000
+    const order = Math.pow(10, Math.floor(Math.log10(maxBalance || 1)))
+    return Math.ceil((maxBalance * 1.15) / order) * order
+  }, [data])
+
   const targetAge = age + Math.floor(mToTarget / 12)
   const targetMonthsRemain = mToTarget % 12
   const currentSimAge = age + Math.floor(simulatedMonths / 12)
@@ -81,7 +91,7 @@ export function CompoundCurve() {
                     v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`
                   }
                   width={35}
-                  domain={[0, 110000]}
+                  domain={[0, yMax]}
                 />
                 <Tooltip
                   contentStyle={{

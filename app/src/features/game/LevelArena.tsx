@@ -17,14 +17,9 @@ export function LevelArena() {
 
   const char = useCharacterStore()
   const monthlyContribution = useSavingsStore((s) => s.monthlyContribution)
-  const simulateTick = useSavingsStore((s) => s.simulateTick)
-  const products = useSavingsStore((s) => s.products)
-  const balance = useSavingsStore((s) => s.balance)
-  const recalculate = useCharacterStore((s) => s.recalculate)
 
   const lastTickRef = useRef(performance.now())
   const accumRef = useRef(0)
-  const simAccumRef = useRef(0)
   const rafRef = useRef<number>(0)
   const shakeRef = useRef(false)
   const [, forceUpdate] = useForceUpdate()
@@ -32,7 +27,6 @@ export function LevelArena() {
   const dps = getDPS(char, monthlyContribution)
   const critChance = getCritChance(char)
   const attackInterval = 1000 // 1 attack per second
-  const simInterval = 3000 // 1 simulated month every 3 seconds (demo speed)
 
   const tick = useCallback(() => {
     const now = performance.now()
@@ -62,19 +56,9 @@ export function LevelArena() {
       }
     }
 
-    // Savings simulation tick — auto-grows balance from monthly plan
-    simAccumRef.current += delta
-    if (simAccumRef.current >= simInterval) {
-      simAccumRef.current -= simInterval
-      simulateTick()
-      // Recalculate character with updated balance
-      const newBalance = useSavingsStore.getState().balance
-      recalculate(newBalance, products)
-    }
-
     cleanDamageNumbers()
     rafRef.current = requestAnimationFrame(tick)
-  }, [dps, critChance, char.level, dealDamage, spawnEnemy, addDamageNumber, cleanDamageNumbers, forceUpdate, simulateTick, recalculate, products])
+  }, [dps, critChance, char.level, dealDamage, spawnEnemy, addDamageNumber, cleanDamageNumbers, forceUpdate])
 
   useEffect(() => {
     rafRef.current = requestAnimationFrame(tick)
