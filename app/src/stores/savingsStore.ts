@@ -8,6 +8,10 @@ interface SavingsStore {
   age: number
   setAge: (age: number) => void
 
+  // Game state
+  started: boolean
+  startGame: () => void
+
   // Savings state
   balance: number
   monthlyContribution: number
@@ -38,6 +42,7 @@ export const useSavingsStore = create<SavingsStore>()(
   persist(
     (set, get) => ({
       age: 18,
+      started: false,
       balance: 0,
       monthlyContribution: 100,
       transactions: [],
@@ -46,6 +51,7 @@ export const useSavingsStore = create<SavingsStore>()(
       lastSimTick: Date.now(),
 
       setAge: (age) => set({ age: Math.max(14, Math.min(65, age)) }),
+      startGame: () => set({ started: true }),
 
       microSave: (amount, label, icon) =>
         set((state) => ({
@@ -76,6 +82,7 @@ export const useSavingsStore = create<SavingsStore>()(
       // In the demo, 1 real second = 1 simulated month
       simulateTick: () => {
         const state = get()
+        if (!state.started) return
         const rate = getBlendedRate(state.products)
         const monthlyRate = rate / 12
 
@@ -92,6 +99,7 @@ export const useSavingsStore = create<SavingsStore>()(
 
       resetGame: () =>
         set({
+          started: false,
           balance: 0,
           simulatedMonths: 0,
           transactions: [],

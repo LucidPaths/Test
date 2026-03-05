@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { GameView } from './features/game/GameView'
 import { EducationView } from './features/education/EducationView'
 import { PortfolioView } from './features/portfolio/PortfolioView'
+import { OnboardingView } from './features/onboarding/OnboardingView'
 import { CurrencyDisplay } from './components/CurrencyDisplay'
 import { useSavingsStore } from './stores/savingsStore'
 import { useCharacterStore } from './stores/characterStore'
@@ -17,6 +18,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('game')
+  const started = useSavingsStore((s) => s.started)
   const balance = useSavingsStore((s) => s.balance)
   const products = useSavingsStore((s) => s.products)
   const age = useSavingsStore((s) => s.age)
@@ -32,6 +34,15 @@ function App() {
     recalculate(balance, products)
     spawnEnemy(level || 1)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Show onboarding if the user hasn't started yet
+  if (!started) {
+    return (
+      <div className="flex flex-col h-full max-w-md mx-auto w-full">
+        <OnboardingView />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full max-w-md mx-auto w-full relative">
