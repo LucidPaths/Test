@@ -117,6 +117,12 @@ When two files must agree on a string value, format, or list — there MUST be a
 | CODE_EXTENSIONS list | `.claude/hooks/maintenance-check.py` | None (single source) | N/A — only lives in one place |
 | Principle names & numbers | `docs/PRINCIPLE_LATTICE.md` | `CLAUDE.md` Principles table | Manual — keep the table in CLAUDE.md in sync with the lattice |
 | Skill invocation names | `.claude/skills/*.md` (filename) | README.md "What's Inside" table | Manual — update README if skills are added/renamed |
+| Rarity tiers & config | `app/src/types/equipment.ts` (`RARITY_CONFIG`) | `app/src/engine/loot.ts` (drop rates), `app/src/features/village/Schmiede.tsx` (upgrade table) | Type-safe — `Rarity` union enforces valid keys |
+| Equipment slot definitions | `app/src/types/equipment.ts` (`EquipSlot`, `SLOT_LABELS`) | `app/src/stores/equipmentStore.ts` (`equipped` shape) | Type-safe — `EquipSlot` union enforces valid slots |
+| Buff stat types | `app/src/types/savings.ts` (`buffStat` union) | `app/src/types/character.ts` (`Buff.stat`), `app/src/engine/buffs.ts` | Type-safe — shared union type, no casts needed |
+| BASELINE_RATE | `app/src/stores/savingsStore.ts` (exported const) | `app/src/features/onboarding/OnboardingView.tsx` (imported) | Single source — imported directly, not duplicated |
+| localStorage keys | Each store's `persist()` call (`100k-savings-v1`, `100k-character-v1`, `100k-game-v1`, `100k-equipment-v1`) | None | Single source — each key lives only in its store file |
+| Token economy (spend/earn) | `app/src/stores/gameStore.ts` (`spendTokens`, `dealDamage`) | Village features (`Taverne.tsx`, `Schmiede.tsx`) | Action-based — village calls `spendTokens()`, never mutates directly |
 
 ---
 
@@ -310,6 +316,15 @@ These are documented bugs in Claude's behavior. Each one has caused real damage 
 ### Trap 11: "I'll add a pip dependency to the hooks"
 **Stop.** The hooks are stdlib-only Python by design. Adding dependencies breaks the "drop into any repo" promise. If you need functionality beyond stdlib, reconsider the approach.
 
+### Trap 12: "I'll mutate the store directly from a component"
+**Stop.** Store mutations must go through named actions (`spendTokens()`, `upgradeItem()`, `dealDamage()`). Direct `setState({...})` from UI components violates Modularity (#1) — the store owns its invariants (e.g., "tokens can't go negative"), and scattering mutations across components makes them impossible to enforce.
+
+### Trap 13: "I'll store the full object for selection state"
+**Stop.** Store IDs, not objects. Zustand store data changes on every action — if a component holds a stale object copy (e.g., a `GearItem` before upgrade), it renders outdated stats. Store the `id` string and re-derive the object from current store state each render.
+
+### Trap 14: "I'll add overflow-y-auto to this container"
+**Stop.** The app uses a single-scroll architecture — only `<main>` scrolls. Adding `overflow-y-auto` to inner containers creates nested scrollbars that break mobile UX. Let content flow naturally and let the page scroll.
+
 ---
 
 ## What Each Key File Does
@@ -327,15 +342,23 @@ The "Touch carefully" column tells you the blast radius. **Yes** = changes here 
 | `.claude/skills/*.md` | Skill definitions for Claude workflows | Usually safe — self-contained markdown prompts |
 | `.claude/PR_GUIDELINES.md` | PR description format | Usually safe |
 | `README.md` | User-facing documentation | Usually safe |
+| `app/src/engine/*.ts` | Game math — compound interest, progression, loot, buffs, milestones | Moderate — stores depend on these calculations |
+| `app/src/stores/*.ts` | Zustand stores — savings, character, game, equipment | Yes — UI reads from these; actions enforce invariants |
+| `app/src/types/*.ts` | Shared types — equipment, character, savings, game | Yes — cross-file contract source of truth |
+| `app/src/features/game/*.tsx` | Main game tab — arena, character panel, curve, micro-save | Moderate — core gameplay loop |
+| `app/src/features/village/*.tsx` | Village tab — Taverne, Schmiede, Akademie | Usually safe — self-contained token-spend features |
+| `app/src/App.tsx` | Router + layout + tab navigation + store init | Yes — changes here affect all tabs |
 
 ## Current State (Honest Assessment)
 
+### Harness / Kit Components
+
 | Component | Status | Gap |
 |-----------|--------|-----|
-| CLAUDE.md template | Working | All `[ADAPT]` sections now populated for this repo |
+| CLAUDE.md template | Working | All `[ADAPT]` sections populated; game contracts and traps documented |
 | SessionStart hook | Working | Runs, outputs orientation JSON |
 | Stop/maintenance hook | Working | Blocks on code changes without doc updates |
-| Principle Lattice | Working | Axioms defined; instantiation slots empty (by design — filled per-project) |
+| Principle Lattice | Working | Axioms defined; instantiation slots filled with game examples |
 | Skills (adversarial-review) | Working | Markdown prompt, no code to break |
 | Skills (project-status) | Working | Markdown prompt |
 | Skills (research-then-implement) | Working | Markdown prompt |
@@ -344,6 +367,34 @@ The "Touch carefully" column tells you the blast radius. **Yes** = changes here 
 | PR Guidelines | Working | Static reference doc |
 | Automated tests | MISSING | No test suite — hooks are tested manually |
 | CI/CD | MISSING | No pipeline defined |
+
+### Game Application (`app/`)
+
+| Component | Status | Gap |
+|-----------|--------|-----|
+| Engine: compound interest | Working | `projectBalance()` drives the Recharts curve |
+| Engine: progression (level/XP/DPS) | Working | Balance → level, gear-aware DPS/crit |
+| Engine: loot system | Working | Stage-scaled drops, 5 rarity tiers, pity counter (15 threshold) |
+| Engine: buffs & milestones | Working | Milestone + product buffs feed into character stats |
+| Store: savingsStore | Working | Balance, transactions, products, monthly tick, blended rate |
+| Store: characterStore | Working | Level/stats derived from balance + products |
+| Store: gameStore | Working | Enemy HP, damage numbers, combat tokens, `spendTokens()` |
+| Store: equipmentStore | Working | Inventory (cap 50), 4 equip slots, stage, `upgradeItem()`, prestige reset |
+| Game tab: LevelArena | Working | RAF combat loop, ref-based stable tick, zone names, loot notifications |
+| Game tab: CharacterPanel | Working | Gear-aware stats, buff display, equipment slots |
+| Game tab: CompoundCurve | Working | Recharts area chart with contribution slider |
+| Game tab: MicroSaveAction | Working | RPG-themed save buttons trigger balance + character recalc |
+| Game tab: MilestoneTrack | Working | Horizontal milestone progress bar |
+| Game tab: EquipmentPanel | Working | 4 slot cards + inventory list with rarity colors |
+| Game tab: SkipMonthButton | Working | Prestige event: monthly deposit → stage reset → power up |
+| Village tab: VillageView | Working | 2×2 building grid with sub-view navigation |
+| Village tab: Taverne | Working | 5-token cost, random financial facts, seen/unseen tracking |
+| Village tab: Schmiede | Working | Upgrade gear by rarity tier, % success, token cost |
+| Village tab: Akademie | Working | Wraps VideoFeed with back navigation |
+| Portfolio tab | Working | Product cards with buff toggle |
+| Onboarding | Working | Setup flow → main app |
+| Scroll architecture | Working | Single `<main>` scroll, hidden scrollbars, no nested overflow |
+| localStorage persistence | Working | 4 stores persist independently with versioned keys |
 
 ## "When Editing X, Check Y" Rules
 
