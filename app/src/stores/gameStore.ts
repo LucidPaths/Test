@@ -8,6 +8,7 @@ interface GameStore {
   isIdle: boolean
   lastTick: number
   enemiesDefeated: number
+  combatTokens: number // earned from killing enemies, visual progression between vestings
   spawnEnemy: (level: number) => void
   dealDamage: (amount: number, isCrit: boolean) => boolean // returns true if enemy died
   addDamageNumber: (value: number, isCrit: boolean) => void
@@ -22,6 +23,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   isIdle: true,
   lastTick: Date.now(),
   enemiesDefeated: 0,
+  combatTokens: 0,
 
   spawnEnemy: (level) => {
     const { name, emoji } = getEnemyName(level)
@@ -36,9 +38,13 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     const newHp = Math.max(0, state.enemy.hp - amount)
     const died = newHp <= 0
 
+    // Tokens scale with enemy level: higher level enemies = more tokens
+    const tokenDrop = died ? state.enemy.level * 2 + 5 : 0
+
     set({
       enemy: { ...state.enemy, hp: newHp },
       enemiesDefeated: died ? state.enemiesDefeated + 1 : state.enemiesDefeated,
+      combatTokens: state.combatTokens + tokenDrop,
     })
 
     return died
@@ -71,6 +77,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     enemy: { name: 'Schulden-Slime', emoji: '🟢', hp: 20, maxHp: 20, level: 1 },
     damageNumbers: [],
     enemiesDefeated: 0,
+    combatTokens: 0,
     lastTick: Date.now(),
   }),
 }))

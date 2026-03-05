@@ -65,15 +65,12 @@ export function getEnemyName(level: number): { name: string; emoji: string } {
 }
 
 /**
- * DPS derives from savings velocity (monthly contribution) + character level + buffs.
- * Higher monthly savings = stronger character = faster combat.
- * Micro-saves give temporary burst but aren't required.
+ * DPS derives from character level + buffs.
+ * Level only changes when monthly vesting hits the account (real money).
+ * Combat is the engagement loop between vestings — DPS is pure character stats.
  */
-export function getDPS(character: Character, monthlyContribution: number): number {
-  // Base DPS from savings velocity: €100/month = ~10 DPS baseline
-  const velocityDPS = Math.floor(monthlyContribution / 10)
-  const levelDPS = character.baseAttack
-  let baseDPS = velocityDPS + levelDPS
+export function getDPS(character: Character): number {
+  const baseDPS = character.baseAttack
 
   let multiplier = 1
   for (const buff of character.buffs) {

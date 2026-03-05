@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useGameStore } from '../../stores/gameStore'
 import { useCharacterStore } from '../../stores/characterStore'
-import { useSavingsStore } from '../../stores/savingsStore'
 import { getDPS, getCritChance } from '../../engine/progression'
 import { HealthBar } from '../../components/HealthBar'
 
@@ -10,13 +9,13 @@ export function LevelArena() {
   const enemy = useGameStore((s) => s.enemy)
   const damageNumbers = useGameStore((s) => s.damageNumbers)
   const enemiesDefeated = useGameStore((s) => s.enemiesDefeated)
+  const combatTokens = useGameStore((s) => s.combatTokens)
   const dealDamage = useGameStore((s) => s.dealDamage)
   const spawnEnemy = useGameStore((s) => s.spawnEnemy)
   const addDamageNumber = useGameStore((s) => s.addDamageNumber)
   const cleanDamageNumbers = useGameStore((s) => s.cleanDamageNumbers)
 
   const char = useCharacterStore()
-  const monthlyContribution = useSavingsStore((s) => s.monthlyContribution)
 
   const lastTickRef = useRef(performance.now())
   const accumRef = useRef(0)
@@ -24,7 +23,7 @@ export function LevelArena() {
   const shakeRef = useRef(false)
   const [, forceUpdate] = useForceUpdate()
 
-  const dps = getDPS(char, monthlyContribution)
+  const dps = getDPS(char)
   const critChance = getCritChance(char)
   const attackInterval = 1000 // 1 attack per second
 
@@ -72,7 +71,7 @@ export function LevelArena() {
           Level {enemy.level}
         </span>
         <span className="font-pixel text-[8px] text-rpg-muted">
-          Besiegt: {enemiesDefeated}
+          Besiegt: {enemiesDefeated} | 🪙 {combatTokens}
         </span>
       </div>
 
@@ -107,7 +106,7 @@ export function LevelArena() {
         </div>
 
         <div className="font-pixel text-[8px] text-rpg-muted">
-          DPS: {dps} (€{monthlyContribution}/Monat)
+          DPS: {dps}
         </div>
       </div>
 
