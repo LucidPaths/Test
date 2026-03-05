@@ -16,26 +16,33 @@ export function LevelArena() {
   const cleanDamageNumbers = useGameStore((s) => s.cleanDamageNumbers)
 
   const char = useCharacterStore()
+  const monthlyContribution = useSavingsStore((s) => s.monthlyContribution)
+  const simulateTick = useSavingsStore((s) => s.simulateTick)
+  const products = useSavingsStore((s) => s.products)
   const balance = useSavingsStore((s) => s.balance)
+  const recalculate = useCharacterStore((s) => s.recalculate)
 
   const lastTickRef = useRef(performance.now())
   const accumRef = useRef(0)
+  const simAccumRef = useRef(0)
   const rafRef = useRef<number>(0)
   const shakeRef = useRef(false)
-  const [, forceUpdate] = useReducerCompat()
+  const [, forceUpdate] = useForceUpdate()
 
-  const dps = getDPS(char)
+  const dps = getDPS(char, monthlyContribution)
   const critChance = getCritChance(char)
-  const tickInterval = 1000 // 1 attack per second
+  const attackInterval = 1000 // 1 attack per second
+  const simInterval = 3000 // 1 simulated month every 3 seconds (demo speed)
 
   const tick = useCallback(() => {
     const now = performance.now()
     const delta = now - lastTickRef.current
     lastTickRef.current = now
-    accumRef.current += delta
 
-    if (accumRef.current >= tickInterval) {
-      accumRef.current -= tickInterval
+    // Combat tick
+    accumRef.current += delta
+    if (accumRef.current >= attackInterval) {
+      accumRef.current -= attackInterval
 
       const isCrit = Math.random() < critChance
       const dmg = isCrit ? Math.floor(dps * 2) : dps
@@ -55,17 +62,24 @@ export function LevelArena() {
       }
     }
 
+    // Savings simulation tick — auto-grows balance from monthly plan
+    simAccumRef.current += delta
+    if (simAccumRef.current >= simInterval) {
+      simAccumRef.current -= simInterval
+      simulateTick()
+      // Recalculate character with updated balance
+      const newBalance = useSavingsStore.getState().balance
+      recalculate(newBalance, products)
+    }
+
     cleanDamageNumbers()
     rafRef.current = requestAnimationFrame(tick)
-  }, [dps, critChance, char.level, dealDamage, spawnEnemy, addDamageNumber, cleanDamageNumbers, forceUpdate])
+  }, [dps, critChance, char.level, dealDamage, spawnEnemy, addDamageNumber, cleanDamageNumbers, forceUpdate, simulateTick, recalculate, products])
 
   useEffect(() => {
-    // Only fight if balance > 0 (you need to save to fight)
-    if (balance <= 0) return
-
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [tick, balance])
+  }, [tick])
 
   return (
     <div className="bg-rpg-panel border border-rpg-border rounded-lg p-3 relative overflow-hidden">
@@ -81,15 +95,24 @@ export function LevelArena() {
       <div className="flex flex-col items-center gap-2">
         <span className="font-pixel text-[10px] text-rpg-accent">{enemy.name}</span>
 
-        <div
-          className={`text-5xl transition-transform ${
-            shakeRef.current ? 'animate-shake' : ''
-          }`}
-        >
-          {enemy.emoji}
+        <div className="flex items-center gap-6">
+          {/* Character */}
+          <div className="text-3xl animate-idle-bob">🧙</div>
+
+          {/* VS */}
+          <div className="font-pixel text-[8px] text-rpg-muted">VS</div>
+
+          {/* Enemy */}
+          <div
+            className={`text-4xl transition-transform ${
+              shakeRef.current ? 'animate-shake' : ''
+            }`}
+          >
+            {enemy.emoji}
+          </div>
         </div>
 
-        <div className="w-full max-w-[200px]">
+        <div className="w-full max-w-[220px]">
           <HealthBar
             current={enemy.hp}
             max={enemy.maxHp}
@@ -97,6 +120,10 @@ export function LevelArena() {
             label="HP"
             height="h-3"
           />
+        </div>
+
+        <div className="font-pixel text-[8px] text-rpg-muted">
+          DPS: {dps} (€{monthlyContribution}/Monat)
         </div>
       </div>
 
@@ -117,21 +144,11 @@ export function LevelArena() {
           </motion.div>
         ))}
       </AnimatePresence>
-
-      {balance <= 0 && (
-        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-          <span className="font-pixel text-[10px] text-rpg-muted text-center px-4">
-            Spare Geld um zu kämpfen!
-          </span>
-        </div>
-      )}
     </div>
   )
 }
 
-// Minimal forceUpdate hook
-function useReducerCompat(): [number, () => void] {
+function useForceUpdate(): [number, () => void] {
   const [n, setN] = useState(0)
   return [n, () => setN((x) => x + 1)]
 }
-

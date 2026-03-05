@@ -1,14 +1,20 @@
 import { useCharacterStore } from '../../stores/characterStore'
+import { useSavingsStore } from '../../stores/savingsStore'
 import { getDPS, getCritChance, getDefense } from '../../engine/progression'
 import { HealthBar } from '../../components/HealthBar'
 import { StatBadge } from '../../components/StatBadge'
 
 export function CharacterPanel() {
   const char = useCharacterStore()
+  const monthlyContribution = useSavingsStore((s) => s.monthlyContribution)
+  const simulatedMonths = useSavingsStore((s) => s.simulatedMonths)
 
-  const dps = getDPS(char)
+  const dps = getDPS(char, monthlyContribution)
   const crit = getCritChance(char)
   const def = getDefense(char)
+
+  const simYears = Math.floor(simulatedMonths / 12)
+  const simMonths = simulatedMonths % 12
 
   return (
     <div className="bg-rpg-panel border border-rpg-border rounded-lg p-3">
@@ -17,7 +23,9 @@ export function CharacterPanel() {
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <span className="font-pixel text-[10px] text-gold">Lv.{char.level}</span>
-            <span className="font-pixel text-[9px] text-rpg-muted">{char.name}</span>
+            <span className="font-pixel text-[8px] text-rpg-muted">
+              {simYears > 0 ? `${simYears}J ${simMonths}M gespart` : `${simMonths}M gespart`}
+            </span>
           </div>
           <HealthBar
             current={char.xpProgress * 100}

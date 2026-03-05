@@ -64,16 +64,24 @@ export function getEnemyName(level: number): { name: string; emoji: string } {
   return enemies[tier]
 }
 
-export function getDPS(character: Character): number {
-  let attack = character.baseAttack
-  let multiplier = 1
+/**
+ * DPS derives from savings velocity (monthly contribution) + character level + buffs.
+ * Higher monthly savings = stronger character = faster combat.
+ * Micro-saves give temporary burst but aren't required.
+ */
+export function getDPS(character: Character, monthlyContribution: number): number {
+  // Base DPS from savings velocity: €100/month = ~10 DPS baseline
+  const velocityDPS = Math.floor(monthlyContribution / 10)
+  const levelDPS = character.baseAttack
+  let baseDPS = velocityDPS + levelDPS
 
+  let multiplier = 1
   for (const buff of character.buffs) {
     if (buff.stat === 'attack') multiplier += buff.value
     if (buff.stat === 'allStats') multiplier += buff.value
   }
 
-  return Math.max(1, Math.floor(attack * multiplier))
+  return Math.max(1, Math.floor(baseDPS * multiplier))
 }
 
 export function getCritChance(character: Character): number {

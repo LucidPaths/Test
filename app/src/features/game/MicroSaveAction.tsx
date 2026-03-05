@@ -8,13 +8,14 @@ interface SaveAction {
   amount: number
   icon: string
   color: string
+  effect: string
 }
 
 const ACTIONS: SaveAction[] = [
-  { label: 'Schwert schärfen', amount: 0.5, icon: '⚔️', color: 'border-blue-400' },
-  { label: 'Heiltrank kaufen', amount: 1.0, icon: '🧪', color: 'border-green-400' },
-  { label: 'Rüstung schmieden', amount: 2.0, icon: '🛡️', color: 'border-yellow-400' },
-  { label: 'Waffe verzaubern', amount: 5.0, icon: '✨', color: 'border-purple-400' },
+  { label: 'Schwert schärfen', amount: 0.5, icon: '⚔️', color: 'border-blue-400/50', effect: '+ATK Boost' },
+  { label: 'Heiltrank kaufen', amount: 1.0, icon: '🧪', color: 'border-green-400/50', effect: '+HP Boost' },
+  { label: 'Rüstung schmieden', amount: 2.0, icon: '🛡️', color: 'border-yellow-400/50', effect: '+DEF Boost' },
+  { label: 'Waffe verzaubern', amount: 5.0, icon: '✨', color: 'border-purple-400/50', effect: '+CRIT Boost' },
 ]
 
 export function MicroSaveAction() {
@@ -23,14 +24,13 @@ export function MicroSaveAction() {
   const balance = useSavingsStore((s) => s.balance)
   const recalculate = useCharacterStore((s) => s.recalculate)
   const [popups, setPopups] = useState<{ id: string; amount: number; x: number }[]>([])
+  const [collapsed, setCollapsed] = useState(true)
 
   function handleSave(action: SaveAction, idx: number) {
     microSave(action.amount, action.label, action.icon)
-    // Recalculate character with new balance
     const newBalance = balance + action.amount
     recalculate(newBalance, products)
 
-    // Show popup
     const id = `pop-${Date.now()}-${idx}`
     setPopups((p) => [...p, { id, amount: action.amount, x: idx * 25 }])
     setTimeout(() => setPopups((p) => p.filter((pp) => pp.id !== id)), 1000)
@@ -38,25 +38,57 @@ export function MicroSaveAction() {
 
   return (
     <div className="relative">
-      <div className="grid grid-cols-2 gap-2">
-        {ACTIONS.map((action, i) => (
-          <motion.button
-            key={action.label}
-            whileTap={{ scale: 0.92 }}
-            onClick={() => handleSave(action, i)}
-            className={`flex items-center gap-2 px-3 py-2.5 bg-rpg-panel border-2 ${action.color} rounded-lg
-              active:brightness-125 transition-all cursor-pointer select-none`}
-          >
-            <span className="text-xl">{action.icon}</span>
-            <div className="flex flex-col items-start">
-              <span className="text-[9px] font-pixel leading-tight">{action.label}</span>
-              <span className="text-[8px] font-pixel text-gold">
-                €{action.amount.toFixed(2)}
-              </span>
-            </div>
-          </motion.button>
-        ))}
-      </div>
+      {/* Collapsible header — clearly optional */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-rpg-panel border border-rpg-border rounded-lg cursor-pointer"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm">🚀</span>
+          <span className="font-pixel text-[9px] text-rpg-muted">
+            Turbo-Boost (optional)
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-pixel text-[7px] text-rpg-muted">
+            Mikro-Sparen beschleunigt dein Ziel
+          </span>
+          <span className="text-rpg-muted text-xs">{collapsed ? '▼' : '▲'}</span>
+        </div>
+      </button>
+
+      {!collapsed && (
+        <div className="mt-2">
+          <p className="font-pixel text-[7px] text-rpg-muted mb-2 px-1">
+            Kleine Beträge von deinem Konto auf dein Sparkonto. Jeder Cent beschleunigt dein 100K-Ziel!
+          </p>
+
+          <div className="grid grid-cols-2 gap-2">
+            {ACTIONS.map((action, i) => (
+              <motion.button
+                key={action.label}
+                whileTap={{ scale: 0.92 }}
+                onClick={() => handleSave(action, i)}
+                className={`flex items-center gap-2 px-3 py-2 bg-rpg-panel border ${action.color} rounded-lg
+                  active:brightness-125 transition-all cursor-pointer select-none`}
+              >
+                <span className="text-lg">{action.icon}</span>
+                <div className="flex flex-col items-start">
+                  <span className="text-[8px] font-pixel leading-tight">{action.label}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[8px] font-pixel text-gold">
+                      €{action.amount.toFixed(2)}
+                    </span>
+                    <span className="text-[6px] font-pixel text-xp-green">
+                      {action.effect}
+                    </span>
+                  </div>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {popups.map((p) => (

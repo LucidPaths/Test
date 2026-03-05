@@ -19,9 +19,13 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('game')
   const balance = useSavingsStore((s) => s.balance)
   const products = useSavingsStore((s) => s.products)
+  const age = useSavingsStore((s) => s.age)
+  const simulatedMonths = useSavingsStore((s) => s.simulatedMonths)
   const level = useCharacterStore((s) => s.level)
   const recalculate = useCharacterStore((s) => s.recalculate)
   const spawnEnemy = useGameStore((s) => s.spawnEnemy)
+
+  const currentSimAge = age + Math.floor(simulatedMonths / 12)
 
   // Initialize character from persisted savings on mount
   useEffect(() => {
@@ -32,13 +36,16 @@ function App() {
   return (
     <div className="flex flex-col h-full max-w-md mx-auto w-full">
       {/* Top bar */}
-      <header className="flex items-center justify-between px-4 py-2 bg-rpg-panel border-b border-rpg-border shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">⚔️</span>
-          <span className="font-pixel text-[9px] text-rpg-text">100K</span>
+      <header className="flex items-center justify-between px-3 py-2 bg-rpg-panel border-b border-rpg-border shrink-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-base">⚔️</span>
+          <span className="font-pixel text-[8px] text-rpg-text">100K</span>
         </div>
         <CurrencyDisplay amount={balance} size="sm" />
-        <div className="font-pixel text-[9px] text-gold">Lv.{level}</div>
+        <div className="flex items-center gap-2">
+          <span className="font-pixel text-[7px] text-rpg-muted">Alter {currentSimAge}</span>
+          <span className="font-pixel text-[8px] text-gold">Lv.{level}</span>
+        </div>
       </header>
 
       {/* Content */}
