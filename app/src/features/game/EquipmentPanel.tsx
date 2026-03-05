@@ -22,21 +22,25 @@ export function EquipmentPanel() {
 
   return (
     <div className="bg-rpg-panel border border-rpg-border rounded-lg p-3">
-      <div className="flex justify-between items-center mb-2">
+      {/* Header row */}
+      <div className="flex justify-between items-center mb-2.5">
         <span className="font-pixel text-[9px] text-rpg-text">Ausrüstung</span>
-        <button
-          onClick={() => setShowInventory(!showInventory)}
-          className="font-pixel text-[7px] text-rpg-muted cursor-pointer hover:text-gold transition-colors"
-        >
-          {showInventory ? '▲ Schließen' : `▼ Inventar (${inventory.length})`}
-        </button>
+        {(gear.attack > 0 || gear.defense > 0 || gear.critChance > 0 || gear.goldFind > 0) && (
+          <div className="flex gap-2">
+            {gear.attack > 0 && <span className="font-pixel text-[6px] text-rpg-accent">+{gear.attack} ATK</span>}
+            {gear.defense > 0 && <span className="font-pixel text-[6px] text-mana-blue">+{gear.defense} DEF</span>}
+            {gear.critChance > 0 && <span className="font-pixel text-[6px] text-gold">+{(gear.critChance * 100).toFixed(1)}%K</span>}
+            {gear.goldFind > 0 && <span className="font-pixel text-[6px] text-xp-green">+{(gear.goldFind * 100).toFixed(0)}%🪙</span>}
+          </div>
+        )}
       </div>
 
-      {/* Equipped slots */}
-      <div className="grid grid-cols-4 gap-1.5 mb-2">
+      {/* Equipped slots — 4 clean boxes */}
+      <div className="grid grid-cols-4 gap-2 mb-2.5">
         {SLOTS.map((slot) => {
           const item = equipped[slot]
           const slotInfo = SLOT_LABELS[slot]
+          const rarityColor = item ? RARITY_CONFIG[item.rarity].color : '#333'
           return (
             <button
               key={slot}
@@ -48,33 +52,40 @@ export function EquipmentPanel() {
                   setShowInventory(true)
                 }
               }}
-              className="flex flex-col items-center gap-0.5 p-1.5 rounded border cursor-pointer transition-colors hover:border-gold/50"
+              className="relative flex flex-col items-center justify-center gap-1 aspect-square rounded-lg border-2 cursor-pointer transition-all hover:brightness-110"
               style={{
-                borderColor: item ? RARITY_CONFIG[item.rarity].color + '60' : undefined,
-                backgroundColor: item ? RARITY_CONFIG[item.rarity].color + '10' : undefined,
+                borderColor: item ? rarityColor + '80' : '#0f346040',
+                background: item
+                  ? `linear-gradient(135deg, ${rarityColor}08, ${rarityColor}18)`
+                  : 'rgba(15,52,96,0.2)',
               }}
             >
-              <span className="text-lg">{item?.emoji ?? slotInfo.emoji}</span>
+              <span className="text-xl">{item?.emoji ?? slotInfo.emoji}</span>
               <span
-                className="font-pixel text-[6px] truncate w-full text-center"
-                style={{ color: item ? RARITY_CONFIG[item.rarity].color : '#888' }}
+                className="font-pixel text-[5px] truncate w-full text-center px-0.5"
+                style={{ color: item ? rarityColor : '#666' }}
               >
                 {item?.name ?? slotInfo.label}
               </span>
+              {/* Rarity dot indicator */}
+              {item && (
+                <div
+                  className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
+                  style={{ backgroundColor: rarityColor }}
+                />
+              )}
             </button>
           )
         })}
       </div>
 
-      {/* Stat summary */}
-      {(gear.attack > 0 || gear.defense > 0 || gear.critChance > 0 || gear.goldFind > 0) && (
-        <div className="flex gap-3 justify-center mb-2">
-          {gear.attack > 0 && <span className="font-pixel text-[7px] text-rpg-accent">+{gear.attack} ATK</span>}
-          {gear.defense > 0 && <span className="font-pixel text-[7px] text-blue-400">+{gear.defense} DEF</span>}
-          {gear.critChance > 0 && <span className="font-pixel text-[7px] text-yellow-400">+{(gear.critChance * 100).toFixed(1)}% KRIT</span>}
-          {gear.goldFind > 0 && <span className="font-pixel text-[7px] text-green-400">+{(gear.goldFind * 100).toFixed(0)}% 🪙</span>}
-        </div>
-      )}
+      {/* Inventory toggle */}
+      <button
+        onClick={() => setShowInventory(!showInventory)}
+        className="w-full font-pixel text-[7px] text-rpg-muted py-1 cursor-pointer hover:text-gold transition-colors"
+      >
+        {showInventory ? '▲ Inventar schließen' : `▼ Inventar öffnen (${inventory.length}/50)`}
+      </button>
 
       {/* Inventory dropdown */}
       <AnimatePresence>
@@ -87,34 +98,24 @@ export function EquipmentPanel() {
             className="overflow-hidden"
           >
             {/* Slot filter tabs */}
-            <div className="flex gap-1 mb-2">
-              <button
-                onClick={() => setFilterSlot(null)}
-                className={`font-pixel text-[7px] px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
-                  !filterSlot ? 'text-gold bg-gold/20' : 'text-rpg-muted hover:text-rpg-text'
-                }`}
-              >
-                Alle
-              </button>
+            <div className="flex gap-1 mt-2 mb-2">
+              <FilterTab active={!filterSlot} onClick={() => setFilterSlot(null)} label="Alle" />
               {SLOTS.map((s) => (
-                <button
+                <FilterTab
                   key={s}
+                  active={filterSlot === s}
                   onClick={() => setFilterSlot(s)}
-                  className={`font-pixel text-[7px] px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
-                    filterSlot === s ? 'text-gold bg-gold/20' : 'text-rpg-muted hover:text-rpg-text'
-                  }`}
-                >
-                  {SLOT_LABELS[s].emoji}
-                </button>
+                  label={SLOT_LABELS[s].emoji}
+                />
               ))}
             </div>
 
             {filteredInventory.length === 0 ? (
-              <div className="font-pixel text-[7px] text-rpg-muted text-center py-2">
-                Noch keine Gegenstände. Besiege Monster!
+              <div className="font-pixel text-[7px] text-rpg-muted text-center py-3">
+                {filterSlot ? 'Keine Gegenstände in diesem Slot.' : 'Noch keine Gegenstände. Besiege Monster!'}
               </div>
             ) : (
-              <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
+              <div className="flex flex-col gap-1 max-h-44 overflow-y-auto">
                 {filteredInventory.map((item) => (
                   <InventoryRow key={item.id} item={item} onEquip={equip} equipped={equipped} />
                 ))}
@@ -124,6 +125,19 @@ export function EquipmentPanel() {
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+function FilterTab({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`font-pixel text-[7px] px-2 py-1 rounded cursor-pointer transition-colors ${
+        active ? 'text-gold bg-gold/15 border border-gold/30' : 'text-rpg-muted hover:text-rpg-text border border-transparent'
+      }`}
+    >
+      {label}
+    </button>
   )
 }
 
@@ -142,29 +156,34 @@ function InventoryRow({
   return (
     <button
       onClick={() => !isEquipped && onEquip(item)}
-      className={`flex items-center gap-2 px-2 py-1 rounded border text-left cursor-pointer transition-colors ${
-        isEquipped ? 'border-gold/50 bg-gold/10' : 'border-rpg-border hover:border-rpg-muted'
+      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left transition-all ${
+        isEquipped
+          ? 'border-gold/40 bg-gold/8 cursor-default'
+          : 'border-rpg-border cursor-pointer hover:border-rpg-muted hover:bg-rpg-bg/50'
       }`}
     >
-      <span className="text-base">{item.emoji}</span>
+      <span className="text-lg">{item.emoji}</span>
       <div className="flex-1 min-w-0">
-        <div
-          className="font-pixel text-[7px] truncate"
-          style={{ color: rarityConfig.color }}
-        >
+        <div className="font-pixel text-[7px] truncate" style={{ color: rarityConfig.color }}>
           {item.name}
-          {isEquipped && <span className="text-gold ml-1">[E]</span>}
+          {isEquipped && <span className="text-gold/70 ml-1">[E]</span>}
         </div>
-        <div className="font-pixel text-[6px] text-rpg-muted flex gap-2">
-          {item.attack > 0 && <span>+{item.attack} ATK</span>}
-          {item.defense > 0 && <span>+{item.defense} DEF</span>}
-          {item.critChance > 0 && <span>+{(item.critChance * 100).toFixed(1)}%K</span>}
-          {item.goldFind > 0 && <span>+{(item.goldFind * 100).toFixed(0)}%🪙</span>}
+        <div className="font-pixel text-[5px] text-rpg-muted flex gap-2 mt-0.5">
+          {item.attack > 0 && <span>⚔️ {item.attack}</span>}
+          {item.defense > 0 && <span>🛡️ {item.defense}</span>}
+          {item.critChance > 0 && <span>💥 {(item.critChance * 100).toFixed(1)}%</span>}
+          {item.goldFind > 0 && <span>🪙 +{(item.goldFind * 100).toFixed(0)}%</span>}
         </div>
       </div>
-      <span className="font-pixel text-[6px]" style={{ color: rarityConfig.color }}>
-        {rarityConfig.label}
-      </span>
+      <div className="flex flex-col items-end gap-0.5">
+        <div
+          className="w-1.5 h-1.5 rounded-full"
+          style={{ backgroundColor: rarityConfig.color }}
+        />
+        <span className="font-pixel text-[5px]" style={{ color: rarityConfig.color }}>
+          {rarityConfig.label}
+        </span>
+      </div>
     </button>
   )
 }
