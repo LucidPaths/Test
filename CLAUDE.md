@@ -6,31 +6,36 @@
 
 ## Project Overview
 
-<!-- [ADAPT] Describe this project in 2-3 sentences. What does it do? What is it NOT?
-     Example: "A REST API for managing inventory. It is NOT a frontend — the React app lives in a separate repo."
-     Being clear about what the project ISN'T prevents scope creep in AI suggestions. -->
+A portable Claude Code starter kit (harness) that you drop into any repo to bootstrap high-quality, auditable AI-assisted development. It provides session hooks, coding standards, skills, and documentation templates — not application code. Distilled from battle-tested patterns in the [HIVE](https://github.com/LucidPaths/HiveMind) project.
 
 ### What This Project Is NOT
 
-<!-- [ADAPT] Explicitly list what this project is NOT. This prevents Claude from drifting.
-     Examples:
-     - "NOT a full-stack app — backend only. Don't suggest frontend components."
-     - "NOT a library — it's a CLI tool. Don't add exports or public API surface."
-     - "NOT meant to support every database — PostgreSQL only. Don't abstract the DB layer."
-     This section is the #1 defense against scope creep. Be specific and harsh. -->
+- **NOT an application.** There is no source code to build, run, or deploy. Don't suggest adding application logic, endpoints, or features.
+- **NOT a library or package.** There are no exports, no `package.json`, no installable module. Don't add dependency management.
+- **NOT project-specific.** The "Fixed" files are universal templates. Don't hardcode project-specific values into fixed files — that belongs in `[ADAPT]` sections only.
+- **NOT meant to be forked and diverged.** It's a drop-in kit. Changes should improve the universal templates, not specialize them.
 
 ## Key Directories
 
-<!-- [ADAPT] Map out the project structure. Annotate each directory.
-     Example:
-     ```
-     src/
-     ├── components/    # React UI components
-     ├── lib/           # Shared utilities and helpers
-     ├── api/           # Backend API routes
-     └── types/         # Shared TypeScript types
-     ```
--->
+```
+├── CLAUDE.md                          # Project instructions (this file) — mixed fixed + adaptive
+├── README.md                          # User-facing docs: what the kit is, quick start
+├── LICENSE                            # MIT License
+├── docs/
+│   ├── PRINCIPLE_LATTICE.md           # 5 axiomatic design principles with instantiation slots
+│   └── TASK_CONTRACT_TEMPLATE.md      # Copy per-task for acceptance criteria
+└── .claude/
+    ├── settings.json                  # Registers session hooks (SessionStart, Stop)
+    ├── PR_GUIDELINES.md               # Standardized PR description format
+    ├── hooks/
+    │   ├── session-start.py           # Auto-injects git state + next steps at session start
+    │   └── maintenance-check.py       # Blocks session end if code changed but docs weren't updated
+    └── skills/
+        ├── adversarial-review.md      # /adversarial-review — three-pass bug verification
+        ├── project-status.md          # /project-status — quick project state overview
+        ├── research-then-implement.md # /research-decide — two-phase research → implement
+        └── structured-reasoning.md    # Decision framework: priority hierarchy, stuck protocol
+```
 
 ## Principles
 
@@ -48,32 +53,38 @@ When making design decisions, check against these principles. If a choice violat
 
 ## Development Guidelines
 
-<!-- [ADAPT] List project-specific gotchas and rules as you discover them. Examples:
-     - "Use pnpm, not npm"
-     - "Config format is YAML, not JSON"
-     - "Never import from `internal/` outside the package"
-     - "Tests must pass before pushing: `npm test`"
--->
+- Python 3 is required for the session hooks (`session-start.py`, `maintenance-check.py`)
+- Git is required — hooks rely on `git` commands for orientation and maintenance checks
+- Files marked "Fixed" in README.md should not be modified unless improving the universal template
+- `[ADAPT]` sections (inside HTML comments) are the only parts meant to be project-specific — fill them in, don't delete the surrounding structure
+- Hook registration lives in `.claude/settings.json` — if you add a new hook script, register it there
+- The `maintenance-check.py` hook uses a `TRIVIAL_SESSION_THRESHOLD` of 15 lines — sessions shorter than that skip the doc-update check
+- `CODE_EXTENSIONS` in `maintenance-check.py` defines which file types trigger the doc-update reminder — extend it if your project uses unlisted extensions
 
 ## Common Tasks
 
 ### Building
-<!-- [ADAPT] Your build command. Example: `npm run build` -->
+No build step — this is a documentation/config kit, not compiled code.
 
 ### Running Development Mode
-<!-- [ADAPT] Your dev command. Example: `npm run dev` -->
+No dev server — drop these files into a target repo and start a Claude Code session.
 
 ### Running Tests
-<!-- [ADAPT] Your test command. Example: `npm test` -->
+No test suite. Hooks can be tested manually:
+- `echo '{}' | python3 .claude/hooks/session-start.py` — should output JSON with `additionalContext`
+- `maintenance-check.py` requires a `transcript_path` in stdin JSON to run meaningfully
 
 ## Architecture Patterns
 
-<!-- [ADAPT] Document key architectural patterns as they emerge. Examples:
-     - Data flow diagrams
-     - State management approach
-     - API request/response patterns
-     - Authentication flow
--->
+### Hook Architecture
+- **SessionStart hook** (`session-start.py`): Reads stdin JSON, gathers git state (branch, recent commits, uncommitted changes) and next steps from `ROADMAP.md`/`TODO.md`, outputs `{"additionalContext": "..."}` to inject orientation into the session.
+- **Stop hook** (`maintenance-check.py`): Reads stdin JSON with `transcript_path`, checks if code files were modified (via `git diff`), and blocks session end with a doc-update reminder if code changed but docs weren't updated. Sessions under 15 transcript lines are skipped. If Claude states "No maintenance needed" in the last 2000 chars of transcript, the check passes.
+
+### Fixed vs Adaptive Pattern
+Files are categorized as **Fixed** (universal, don't modify) or **Adaptive** (project-specific, fill in `[ADAPT]` markers). This separation lets the kit be dropped into any repo without conflict.
+
+### Skills Pattern
+Skills in `.claude/skills/` are markdown files that define structured prompts invokable via `/skill-name`. They don't contain executable code — they instruct Claude on how to perform a specific workflow (adversarial review, research-then-implement, etc.).
 
 ## Things to Avoid
 
@@ -86,8 +97,9 @@ These are universal anti-patterns that cause real damage. They apply every sessi
 - **Don't use subagents/task tools for research.** Do research directly with Read/Grep/Glob. Subagents burn 5-10x more tokens for the same result. Only use subagents for truly independent parallel *write* tasks.
 - **Don't leave backwards-compatibility shims.** No renaming unused `_vars`, no re-exporting dead types, no `// removed` comments. If it's unused, delete it completely.
 
-<!-- [ADAPT] Add project-specific "don't" rules as you discover them. Format:
-     - **Don't [thing].** [Why it's wrong and what to do instead.] -->
+- **Don't modify "Fixed" files to add project-specific content.** Fixed files are universal templates. Project-specific content goes only in `[ADAPT]` sections of CLAUDE.md and the `Instantiations` sections of PRINCIPLE_LATTICE.md.
+- **Don't add application code to this repo.** This is a harness/kit, not an app. If you need to test something, do it in a separate repo that consumes this kit.
+- **Don't hardcode paths in hooks.** The hooks use `get_project_root()` to resolve the project root dynamically. Keep it that way.
 
 ## Cross-File Contracts
 
@@ -99,12 +111,12 @@ When two files must agree on a string value, format, or list — there MUST be a
 3. Add the contract to this table
 4. If the contract is security-sensitive, add a test asserting both sides match
 
-<!-- [ADAPT] Track contracts here as you discover them.
-
-     | Contract | Source of Truth | Mirror | Sync Method |
-     |----------|----------------|--------|-------------|
-     | Example: API routes | routes.ts | client.ts | Cross-ref comment |
--->
+| Contract | Source of Truth | Mirror | Sync Method |
+|----------|----------------|--------|-------------|
+| Hook registration | `.claude/settings.json` | `.claude/hooks/*.py` (filenames) | Manual — if you add/rename a hook script, update settings.json |
+| CODE_EXTENSIONS list | `.claude/hooks/maintenance-check.py` | None (single source) | N/A — only lives in one place |
+| Principle names & numbers | `docs/PRINCIPLE_LATTICE.md` | `CLAUDE.md` Principles table | Manual — keep the table in CLAUDE.md in sync with the lattice |
+| Skill invocation names | `.claude/skills/*.md` (filename) | README.md "What's Inside" table | Manual — update README if skills are added/renamed |
 
 ---
 
@@ -229,12 +241,11 @@ When logic exists in two places (client + server, frontend + backend, two config
 
 ### Project-Specific Standards
 
-<!-- [ADAPT] Add standards specific to your tech stack as you discover them. Examples:
-     - "Always use `const` assertions for TypeScript enums"
-     - "Shell scripts must use `set -euo pipefail`"
-     - "Python imports: stdlib, third-party, local (separated by blank lines)"
-     - "All database queries use parameterized statements (never string interpolation)"
--->
+- Python hooks follow stdlib-only convention — no third-party imports (keeps the kit dependency-free)
+- Python imports order: stdlib only, grouped logically (json/sys/os, then subprocess/re)
+- Hook scripts must handle stdin JSON gracefully — `try/except` around `json.load(sys.stdin)` with a fallback to `{}`
+- Hook scripts must respect timeouts configured in `settings.json` (currently 10s) — use `timeout=5` on subprocess calls to leave headroom
+- Markdown files use standard GitHub-Flavored Markdown — no custom extensions
 
 ---
 
@@ -293,9 +304,11 @@ These are documented bugs in Claude's behavior. Each one has caused real damage 
 
 ### Project-Specific Traps
 
-<!-- [ADAPT] Add traps discovered during development. Format:
-     ### Trap N: "The tempting thing to say"
-     **Stop.** Why it's wrong and what to do instead. -->
+### Trap 10: "I'll add a new skill file for this"
+**Stop.** Skills should be general-purpose workflows, not task-specific instructions. If the workflow won't be reused across multiple projects, it doesn't belong as a skill. Put task-specific guidance in CLAUDE.md or a DECISION file instead.
+
+### Trap 11: "I'll add a pip dependency to the hooks"
+**Stop.** The hooks are stdlib-only Python by design. Adding dependencies breaks the "drop into any repo" promise. If you need functionality beyond stdlib, reconsider the approach.
 
 ---
 
@@ -303,58 +316,58 @@ These are documented bugs in Claude's behavior. Each one has caused real damage 
 
 The "Touch carefully" column tells you the blast radius. **Yes** = changes here cascade widely; read the whole file before editing. **Moderate** = self-contained but important. **Usually safe** = low-risk changes.
 
-<!-- [ADAPT] Fill this in as you explore the codebase.
-
-     | File | Purpose | Touch carefully? |
-     |------|---------|------------------|
-     | src/index.ts | Entry point, initializes app | Yes — core logic |
-     | src/api/routes.ts | API route definitions | Moderate |
-     | src/types.ts | Shared types and constants | Usually safe |
--->
+| File | Purpose | Touch carefully? |
+|------|---------|------------------|
+| `CLAUDE.md` | Project instructions — universal standards + adaptive sections | Yes — this is the primary contract Claude reads every session |
+| `.claude/settings.json` | Registers hooks (SessionStart, Stop) | Yes — wrong config breaks all hooks silently |
+| `.claude/hooks/session-start.py` | Auto-orientation at session start | Moderate — changes affect every session's first message |
+| `.claude/hooks/maintenance-check.py` | Doc-update reminder before session end | Moderate — can block sessions if misconfigured |
+| `docs/PRINCIPLE_LATTICE.md` | 5 axiomatic principles with instantiation slots | Moderate — principles are shared across CLAUDE.md |
+| `docs/TASK_CONTRACT_TEMPLATE.md` | Copy-per-task template for acceptance criteria | Usually safe — it's a template, not referenced by code |
+| `.claude/skills/*.md` | Skill definitions for Claude workflows | Usually safe — self-contained markdown prompts |
+| `.claude/PR_GUIDELINES.md` | PR description format | Usually safe |
+| `README.md` | User-facing documentation | Usually safe |
 
 ## Current State (Honest Assessment)
 
-<!-- [ADAPT] Track what works, what's broken, what's missing. Be honest — Claude
-     should know what's incomplete, not just what exists. This prevents it from
-     building on assumptions about features that don't work yet.
-
-     | Component | Status | Gap |
-     |-----------|--------|-----|
-     | Auth flow | Working | None |
-     | Email sending | PARTIAL | Templates not implemented yet |
-     | Search | MISSING | Only placeholder, no real indexing |
-     | Rate limiting | CRUDE | Fixed window, needs sliding window |
-
-     Status values: Working, PARTIAL, MISSING, CRUDE, BROKEN
-     Update this table as the project evolves. -->
+| Component | Status | Gap |
+|-----------|--------|-----|
+| CLAUDE.md template | Working | All `[ADAPT]` sections now populated for this repo |
+| SessionStart hook | Working | Runs, outputs orientation JSON |
+| Stop/maintenance hook | Working | Blocks on code changes without doc updates |
+| Principle Lattice | Working | Axioms defined; instantiation slots empty (by design — filled per-project) |
+| Skills (adversarial-review) | Working | Markdown prompt, no code to break |
+| Skills (project-status) | Working | Markdown prompt |
+| Skills (research-then-implement) | Working | Markdown prompt |
+| Skills (structured-reasoning) | Working | Markdown prompt |
+| Task Contract Template | Working | Template only, copied per-task |
+| PR Guidelines | Working | Static reference doc |
+| Automated tests | MISSING | No test suite — hooks are tested manually |
+| CI/CD | MISSING | No pipeline defined |
 
 ## "When Editing X, Check Y" Rules
 
 These conditional rules fire when you're working in specific areas. They prevent the most common cascade failures.
 
-<!-- [ADAPT] Add conditional rules as you discover dangerous edit patterns. Format:
+### When editing `.claude/settings.json`:
+1. Verify hook script paths still resolve — the `$(git rev-parse --show-toplevel)` pattern must match actual file locations
+2. Check that timeout values leave headroom for subprocess calls inside hooks (hook timeout > subprocess timeout)
+3. Test the hook by starting/stopping a Claude Code session
 
-     ### When editing [area]:
-     1. Check [thing that breaks if you forget]
-     2. Verify [related invariant]
-     3. Update [related file/config]
+### When editing hook scripts (`.claude/hooks/*.py`):
+1. Ensure no third-party imports — stdlib only
+2. Keep `json.load(sys.stdin)` wrapped in try/except with graceful fallback
+3. Verify subprocess calls use `timeout=5` (must be less than the 10s hook timeout in settings.json)
+4. If you rename a hook file, update `.claude/settings.json` to match
 
-     Examples:
-     ### When editing API routes:
-     1. Update the client-side API wrapper if the endpoint signature changed
-     2. Update API documentation/swagger if it exists
-     3. Check if any tests reference the old endpoint
+### When editing the Principles table in CLAUDE.md:
+1. Keep it in sync with `docs/PRINCIPLE_LATTICE.md` — same names, same numbers, same axioms
+2. These are referenced by number elsewhere (e.g., "violates #1") — renumbering breaks references
 
-     ### When editing database schema:
-     1. Create a migration — never edit the schema directly
-     2. Check all queries that touch the modified table
-     3. Verify seed data still matches the schema
-
-     ### When adding a new feature:
-     1. Add logging at lifecycle events (init, success, error)
-     2. Add to the "Current State" table above
-     3. Update ROADMAP.md or TODO.md if applicable
--->
+### When adding a new skill:
+1. Create the `.md` file in `.claude/skills/`
+2. Update the "What's Inside" table in `README.md`
+3. Add the skill to the "Current State" table in this file
 
 ---
 
