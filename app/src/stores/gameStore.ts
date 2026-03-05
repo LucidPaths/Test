@@ -13,6 +13,7 @@ interface GameStore {
   addDamageNumber: (value: number, isCrit: boolean) => void
   cleanDamageNumbers: () => void
   setLastTick: (t: number) => void
+  resetCombat: () => void
 }
 
 export const useGameStore = create<GameStore>()((set, get) => ({
@@ -65,4 +66,11 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   },
 
   setLastTick: (t) => set({ lastTick: t }),
+
+  resetCombat: () => set({
+    enemy: { name: 'Schulden-Slime', emoji: '🟢', hp: 20, maxHp: 20, level: 1 },
+    damageNumbers: [],
+    enemiesDefeated: 0,
+    lastTick: Date.now(),
+  }),
 }))

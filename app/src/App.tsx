@@ -27,6 +27,7 @@ function App() {
   const level = useCharacterStore((s) => s.level)
   const recalculate = useCharacterStore((s) => s.recalculate)
   const spawnEnemy = useGameStore((s) => s.spawnEnemy)
+  const resetCombat = useGameStore((s) => s.resetCombat)
 
   const currentSimAge = age + Math.floor(simulatedMonths / 12)
 
@@ -58,7 +59,11 @@ function App() {
           <span className="font-pixel text-[7px] text-rpg-muted">Alter {currentSimAge}</span>
           <span className="font-pixel text-[8px] text-gold">Lv.{level}</span>
           <button
-            onClick={() => { resetGame(); recalculate(0, []) }}
+            onClick={() => {
+              resetGame()
+              recalculate(0, [])
+              resetCombat()
+            }}
             className="font-pixel text-[7px] text-rpg-accent border border-rpg-accent/30 rounded px-1.5 py-0.5 cursor-pointer hover:bg-rpg-accent/20 transition-colors"
           >
             RESET
