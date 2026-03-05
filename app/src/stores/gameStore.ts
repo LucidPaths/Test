@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Enemy, DamageNumber } from '../types/game'
-import { getEnemyHP, getEnemyName } from '../engine/progression'
+import type { Enemy, DamageNumber, ActiveSpellBuff, ActiveDoT } from '../types/game'
+import type { ZoneEnemy, ZoneDef } from '../types/zone'
+import { getZoneEnemyHP } from '../engine/zones'
 
 interface GameStore {
   enemy: Enemy
@@ -10,44 +11,99 @@ interface GameStore {
   lastTick: number
   enemiesDefeated: number
   combatTokens: number
-  spawnEnemy: (stage: number) => void
-  dealDamage: (amount: number, isCrit: boolean, goldFindBonus?: number) => boolean
-  spendTokens: (cost: number) => boolean // returns false if can't afford
-  addDamageNumber: (value: number, isCrit: boolean) => void
+
+  // ── Zone combat state ──
+  killStreak: number
+  bestStreak: number
+  mana: number
+  maxMana: number
+  activeSpellBuffs: ActiveSpellBuff[]
+  activeDots: ActiveDoT[]
+
+  // Actions
+  spawnEnemy: (zone: ZoneDef, zoneEnemy: ZoneEnemy, characterLevel: number) => void
+  dealDamage: (amount: number, isCrit: boolean, goldFindBonus?: number, tokenMultiplier?: number) => boolean
+  spendTokens: (cost: number) => boolean
+  addDamageNumber: (value: number, isCrit: boolean, isSpell?: boolean) => void
   cleanDamageNumbers: () => void
   setLastTick: (t: number) => void
+  incrementStreak: () => void
+  resetStreak: () => void
+  regenMana: (amount?: number) => void
+  spendMana: (cost: number) => boolean
+  setMaxMana: (max: number) => void
+  addSpellBuff: (buff: ActiveSpellBuff) => void
+  addDoT: (dot: ActiveDoT) => void
+  tickDoTs: (dps: number) => number  // returns total DoT damage this tick
+  cleanExpiredBuffs: () => void
   resetCombat: () => void
+}
+
+const DEFAULT_ENEMY: Enemy = {
+  name: 'Schulden-Slime', emoji: '🟢', hp: 25, maxHp: 25, level: 1,
+  isBoss: false, traits: [], shieldHitsRemaining: 0, enrageTriggered: false,
 }
 
 export const useGameStore = create<GameStore>()(
   persist(
     (set, get) => ({
-      enemy: { name: 'Schulden-Slime', emoji: '🟢', hp: 20, maxHp: 20, level: 1 },
+      enemy: { ...DEFAULT_ENEMY },
       damageNumbers: [],
       isIdle: true,
       lastTick: Date.now(),
       enemiesDefeated: 0,
       combatTokens: 0,
+      killStreak: 0,
+      bestStreak: 0,
+      mana: 50,
+      maxMana: 50,
+      activeSpellBuffs: [],
+      activeDots: [],
 
-      spawnEnemy: (stage) => {
-        const { name, emoji } = getEnemyName(stage)
-        const hp = getEnemyHP(stage)
+      spawnEnemy: (zone, zoneEnemy, characterLevel) => {
+        const hp = getZoneEnemyHP(zone, zoneEnemy, characterLevel)
         set({
-          enemy: { name, emoji, hp, maxHp: hp, level: stage },
+          enemy: {
+            name: zoneEnemy.name,
+            emoji: zoneEnemy.emoji,
+            hp,
+            maxHp: hp,
+            level: zone.unlockMonth * 10 + 1,
+            isBoss: zoneEnemy.isBoss,
+            traits: [...zoneEnemy.traits],
+            shieldHitsRemaining: zoneEnemy.traits.includes('shielded') ? 3 : 0,
+            enrageTriggered: false,
+          },
         })
       },
 
-      dealDamage: (amount, isCrit, goldFindBonus = 0) => {
+      dealDamage: (amount, isCrit, goldFindBonus = 0, tokenMultiplier = 1) => {
         const state = get()
         const newHp = Math.max(0, state.enemy.hp - amount)
         const died = newHp <= 0
 
-        // Tokens scale with enemy level, boosted by goldFind gear stat
-        const baseTokens = died ? state.enemy.level * 2 + 5 : 0
+        const baseTokens = died ? Math.floor(10 * tokenMultiplier) : 0
         const tokenDrop = died ? Math.floor(baseTokens * (1 + goldFindBonus)) : 0
 
+        // Check enrage trigger
+        let enemy = { ...state.enemy, hp: newHp }
+        if (
+          !enemy.enrageTriggered &&
+          enemy.traits.includes('enraged') &&
+          newHp > 0 &&
+          newHp <= enemy.maxHp * 0.3
+        ) {
+          const bonusHp = Math.floor(enemy.maxHp * 0.5)
+          enemy = {
+            ...enemy,
+            hp: newHp + bonusHp,
+            maxHp: enemy.maxHp + bonusHp,
+            enrageTriggered: true,
+          }
+        }
+
         set({
-          enemy: { ...state.enemy, hp: newHp },
+          enemy,
           enemiesDefeated: died ? state.enemiesDefeated + 1 : state.enemiesDefeated,
           combatTokens: state.combatTokens + tokenDrop,
         })
@@ -62,7 +118,7 @@ export const useGameStore = create<GameStore>()(
         return true
       },
 
-      addDamageNumber: (value, isCrit) => {
+      addDamageNumber: (value, isCrit, isSpell = false) => {
         set((state) => ({
           damageNumbers: [
             ...state.damageNumbers,
@@ -70,6 +126,7 @@ export const useGameStore = create<GameStore>()(
               id: `dmg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
               value,
               isCrit,
+              isSpell,
               timestamp: Date.now(),
             },
           ].slice(-10),
@@ -85,19 +142,80 @@ export const useGameStore = create<GameStore>()(
 
       setLastTick: (t) => set({ lastTick: t }),
 
+      incrementStreak: () =>
+        set((s) => {
+          const next = s.killStreak + 1
+          return { killStreak: next, bestStreak: Math.max(s.bestStreak, next) }
+        }),
+
+      resetStreak: () => set({ killStreak: 0 }),
+
+      regenMana: (amount = 1) =>
+        set((s) => ({ mana: Math.min(s.maxMana, s.mana + amount) })),
+
+      spendMana: (cost) => {
+        const state = get()
+        if (state.mana < cost) return false
+        set({ mana: state.mana - cost })
+        return true
+      },
+
+      setMaxMana: (max) => set({ maxMana: max, mana: Math.min(get().mana, max) }),
+
+      addSpellBuff: (buff) =>
+        set((s) => ({
+          activeSpellBuffs: [...s.activeSpellBuffs.filter((b) => b.spellId !== buff.spellId), buff],
+        })),
+
+      addDoT: (dot) =>
+        set((s) => ({
+          activeDots: [...s.activeDots.filter((d) => d.spellId !== dot.spellId), dot],
+        })),
+
+      tickDoTs: (dps) => {
+        const state = get()
+        let totalDamage = 0
+        const remaining: ActiveDoT[] = []
+
+        for (const dot of state.activeDots) {
+          const dmg = Math.floor(dps * dot.tickMultiplier)
+          totalDamage += dmg
+          if (dot.ticksRemaining > 1) {
+            remaining.push({ ...dot, ticksRemaining: dot.ticksRemaining - 1 })
+          }
+        }
+
+        set({ activeDots: remaining })
+        return totalDamage
+      },
+
+      cleanExpiredBuffs: () => {
+        const now = Date.now()
+        set((s) => ({
+          activeSpellBuffs: s.activeSpellBuffs.filter((b) => b.expiresAt > now),
+        }))
+      },
+
       resetCombat: () => set({
-        enemy: { name: 'Schulden-Slime', emoji: '🟢', hp: 20, maxHp: 20, level: 1 },
+        enemy: { ...DEFAULT_ENEMY },
         damageNumbers: [],
         enemiesDefeated: 0,
         combatTokens: 0,
+        killStreak: 0,
+        bestStreak: 0,
+        mana: 50,
+        maxMana: 50,
+        activeSpellBuffs: [],
+        activeDots: [],
         lastTick: Date.now(),
       }),
     }),
     {
-      name: '100k-game-v1',
+      name: '100k-game-v2',
       partialize: (state) => ({
         enemiesDefeated: state.enemiesDefeated,
         combatTokens: state.combatTokens,
+        bestStreak: state.bestStreak,
       }),
     }
   )
