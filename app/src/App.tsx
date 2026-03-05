@@ -34,9 +34,9 @@ function App() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex flex-col h-full max-w-md mx-auto w-full">
-      {/* Top bar */}
-      <header className="flex items-center justify-between px-3 py-2 bg-rpg-panel border-b border-rpg-border shrink-0">
+    <div className="flex flex-col h-full max-w-md mx-auto w-full relative">
+      {/* Top bar — fixed at top */}
+      <header className="sticky top-0 z-20 flex items-center justify-between px-3 py-2 bg-rpg-panel border-b border-rpg-border shrink-0">
         <div className="flex items-center gap-1.5">
           <span className="text-base">⚔️</span>
           <span className="font-pixel text-[8px] text-rpg-text">100K</span>
@@ -48,15 +48,15 @@ function App() {
         </div>
       </header>
 
-      {/* Content */}
-      <main className="flex-1 overflow-hidden flex flex-col">
+      {/* Content — scrollable, with bottom padding for fixed nav */}
+      <main className="flex-1 overflow-y-auto pb-16">
         {activeTab === 'game' && <GameView />}
         {activeTab === 'learn' && <EducationView />}
         {activeTab === 'portfolio' && <PortfolioView />}
       </main>
 
-      {/* Bottom nav */}
-      <nav className="flex shrink-0 bg-rpg-panel border-t border-rpg-border">
+      {/* Bottom nav — fixed at bottom */}
+      <nav className="fixed bottom-0 left-0 right-0 z-20 max-w-md mx-auto flex bg-rpg-panel border-t border-rpg-border">
         {TABS.map((tab) => (
           <button
             key={tab.id}

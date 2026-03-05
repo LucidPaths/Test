@@ -36,7 +36,7 @@ export function GameView() {
   useSavingsSimulation()
 
   return (
-    <div className="flex flex-col gap-3 p-3 overflow-y-auto flex-1">
+    <div className="flex flex-col gap-3 p-3">
       <CompoundCurve />
       <MilestoneTrack />
       <LevelArena />
