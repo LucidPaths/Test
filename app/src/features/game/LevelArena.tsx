@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useGameStore } from '../../stores/gameStore'
 import { useCharacterStore } from '../../stores/characterStore'
@@ -12,25 +12,19 @@ export function LevelArena() {
   const enemy = useGameStore((s) => s.enemy)
   const damageNumbers = useGameStore((s) => s.damageNumbers)
   const enemiesDefeated = useGameStore((s) => s.enemiesDefeated)
-  const dealDamage = useGameStore((s) => s.dealDamage)
-  const spawnEnemy = useGameStore((s) => s.spawnEnemy)
-  const addDamageNumber = useGameStore((s) => s.addDamageNumber)
-  const cleanDamageNumbers = useGameStore((s) => s.cleanDamageNumbers)
-
-  const char = useCharacterStore()
   const stage = useEquipmentStore((s) => s.stage)
   const equipped = useEquipmentStore((s) => s.equipped)
-  const pityCounter = useEquipmentStore((s) => s.pityCounter)
-  const advanceStage = useEquipmentStore((s) => s.advanceStage)
-  const addToInventory = useEquipmentStore((s) => s.addToInventory)
-  const setPityCounter = useEquipmentStore((s) => s.setPityCounter)
+  const char = useCharacterStore()
 
   const [lastDrop, setLastDrop] = useState<{ name: string; rarity: string; emoji: string } | null>(null)
 
   const gear = getGearBonuses(equipped)
   const dps = getDPS(char, gear.attack)
   const critChance = getCritChance(char, gear.critChance)
-  const attackInterval = 1000
+
+  // Store combat values in refs so the RAF callback stays stable
+  const combatRef = useRef({ dps, critChance, goldFind: gear.goldFind, stage })
+  combatRef.current = { dps, critChance, goldFind: gear.goldFind, stage }
 
   const lastTickRef = useRef(performance.now())
   const accumRef = useRef(0)
@@ -38,54 +32,56 @@ export function LevelArena() {
   const shakeRef = useRef(false)
   const [, forceUpdate] = useForceUpdate()
 
-  const tick = useCallback(() => {
-    const now = performance.now()
-    const delta = now - lastTickRef.current
-    lastTickRef.current = now
+  useEffect(() => {
+    const attackInterval = 1000
 
-    accumRef.current += delta
-    if (accumRef.current >= attackInterval) {
-      accumRef.current -= attackInterval
+    function tick() {
+      const now = performance.now()
+      const delta = now - lastTickRef.current
+      lastTickRef.current = now
 
-      const isCrit = Math.random() < critChance
-      const dmg = isCrit ? Math.floor(dps * 2) : dps
+      accumRef.current += delta
+      if (accumRef.current >= attackInterval) {
+        accumRef.current -= attackInterval
 
-      const died = dealDamage(dmg, isCrit, gear.goldFind)
-      addDamageNumber(dmg, isCrit)
-      shakeRef.current = true
-      forceUpdate()
+        const { dps: curDps, critChance: curCrit, goldFind, stage: curStage } = combatRef.current
+        const isCrit = Math.random() < curCrit
+        const dmg = isCrit ? Math.floor(curDps * 2) : curDps
 
-      setTimeout(() => {
-        shakeRef.current = false
+        const died = useGameStore.getState().dealDamage(dmg, isCrit, goldFind)
+        useGameStore.getState().addDamageNumber(dmg, isCrit)
+        shakeRef.current = true
         forceUpdate()
-      }, 300)
 
-      if (died) {
-        const currentPity = useEquipmentStore.getState().pityCounter
-        const drop = rollLootDrop(stage, currentPity)
-        if (drop) {
-          addToInventory(drop.item)
-          setPityCounter(drop.newPity)
-          setLastDrop({ name: drop.item.name, rarity: drop.item.rarity, emoji: drop.item.emoji })
-          setTimeout(() => setLastDrop(null), 2000)
+        setTimeout(() => {
+          shakeRef.current = false
+          forceUpdate()
+        }, 300)
+
+        if (died) {
+          const currentPity = useEquipmentStore.getState().pityCounter
+          const drop = rollLootDrop(curStage, currentPity)
+          if (drop) {
+            useEquipmentStore.getState().addToInventory(drop.item)
+            useEquipmentStore.getState().setPityCounter(drop.newPity)
+            setLastDrop({ name: drop.item.name, rarity: drop.item.rarity, emoji: drop.item.emoji })
+            setTimeout(() => setLastDrop(null), 2000)
+          }
+
+          useEquipmentStore.getState().advanceStage()
+          const nextStage = useEquipmentStore.getState().stage
+          setTimeout(() => useGameStore.getState().spawnEnemy(nextStage), 500)
         }
-
-        advanceStage()
-        const nextStage = useEquipmentStore.getState().stage
-        setTimeout(() => spawnEnemy(nextStage), 500)
       }
+
+      useGameStore.getState().cleanDamageNumbers()
+      rafRef.current = requestAnimationFrame(tick)
     }
 
-    cleanDamageNumbers()
-    rafRef.current = requestAnimationFrame(tick)
-  }, [dps, critChance, stage, dealDamage, spawnEnemy, addDamageNumber, cleanDamageNumbers, forceUpdate, advanceStage, addToInventory, setPityCounter])
-
-  useEffect(() => {
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [tick])
+  }, [forceUpdate]) // stable — forceUpdate never changes identity
 
-  // Zone name based on stage tier
   const zoneName = getZoneName(stage)
 
   return (
@@ -103,20 +99,17 @@ export function LevelArena() {
 
       {/* Combat area */}
       <div className="flex items-center justify-center gap-4 py-3">
-        {/* Character */}
         <div className="flex flex-col items-center">
           <div className="text-3xl animate-idle-bob">🧙</div>
           <span className="font-pixel text-[6px] text-rpg-muted mt-1">DPS {dps}</span>
         </div>
 
-        {/* VS divider */}
         <div className="flex flex-col items-center gap-1">
           <div className="w-px h-6 bg-rpg-border" />
           <span className="font-pixel text-[6px] text-rpg-muted">VS</span>
           <div className="w-px h-6 bg-rpg-border" />
         </div>
 
-        {/* Enemy */}
         <div className="flex flex-col items-center">
           <div
             className={`text-4xl transition-transform ${
@@ -184,16 +177,16 @@ export function LevelArena() {
 
 function getZoneName(stage: number): string {
   const zones = [
-    'Schulden-Sumpf',       // 1-9
-    'Gebühren-Grotte',      // 10-19
-    'Zins-Ödland',          // 20-29
-    'Inflations-Höhle',     // 30-39
-    'Steuer-Festung',       // 40-49
-    'Kredit-Labyrinth',     // 50-59
-    'Börsen-Vulkan',        // 60-69
-    'Rezessions-Turm',      // 70-79
-    'Deflations-Gipfel',    // 80-89
-    'Schulden-Thron',       // 90+
+    'Schulden-Sumpf',
+    'Gebühren-Grotte',
+    'Zins-Ödland',
+    'Inflations-Höhle',
+    'Steuer-Festung',
+    'Kredit-Labyrinth',
+    'Börsen-Vulkan',
+    'Rezessions-Turm',
+    'Deflations-Gipfel',
+    'Schulden-Thron',
   ]
   const tier = Math.min(Math.floor((stage - 1) / 10), zones.length - 1)
   return zones[tier]
