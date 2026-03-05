@@ -25,12 +25,10 @@ Every component should be self-contained. Pull one out — that specific thing s
 When two systems need to talk, build a bridge — don't duplicate. If data already lives somewhere, reference it. Don't maintain two copies of anything.
 
 **Instantiations:**
-<!-- [ADAPT] Add concrete examples as your project grows. Examples:
-     - "API routes are independent — auth failing doesn't break health checks"
-     - "Components use props, not global state — any component is replaceable"
-     - "Shared types live in types.ts — single source of truth"
--->
-*None yet — add concrete examples as the project grows.*
+- **4 independent Zustand stores** — `savingsStore`, `characterStore`, `gameStore`, `equipmentStore` each own their state and persist independently. Resetting equipment doesn't touch savings.
+- **Store actions enforce invariants** — `spendTokens()` checks balance before deducting; `upgradeItem()` lives in equipmentStore, not scattered across UI. Village components call actions, never mutate directly.
+- **Shared types as single source of truth** — `Rarity`, `EquipSlot`, `Buff` types live in `types/` and are imported everywhere. No duplicate type definitions.
+- **Engine layer is pure functions** — `compound.ts`, `progression.ts`, `loot.ts`, `buffs.ts` have zero React imports. Stores call them; they don't call stores.
 
 **Demands:**
 - Each component fails independently — one breaking doesn't cascade
@@ -50,12 +48,11 @@ The best code is code someone else already debugged. Use battle-tested libraries
 Complexity is a cost, not a feature. Three clear lines beat one clever abstraction. A working simple solution beats an elegant broken one. Always.
 
 **Instantiations:**
-<!-- [ADAPT] Add examples of simplicity wins. Examples:
-     - "Using Zod for validation instead of hand-rolled checks"
-     - "localStorage for settings (not a custom database)"
-     - "Standard fetch() instead of a custom HTTP wrapper"
--->
-*None yet — add concrete examples as the project grows.*
+- **Zustand over Redux** — minimal boilerplate, `persist` middleware gives localStorage for free. No actions/reducers/sagas ceremony.
+- **Recharts for compound curve** — battle-tested charting library instead of hand-rolled SVG/canvas. `<AreaChart>` does exactly what we need.
+- **CSS scroll-snap for video feed** — no scroll library dependency. Native `scroll-snap-type: y mandatory` + `IntersectionObserver` handles the TikTok-style feed.
+- **Ref-based RAF loop** — stores combat values in a ref, reads inside a stable `requestAnimationFrame` callback. Avoids dependency array churn without complex memoization.
+- **`BASELINE_RATE` exported const** — single number imported where needed instead of a config system or env var for a hackathon prototype.
 
 **Demands:**
 - Before writing a new system, search for existing solutions first
@@ -72,12 +69,10 @@ Complexity is a cost, not a feature. Three clear lines beat one clever abstracti
 An error message that says "something went wrong" is itself a bug. Every error must say what happened, why, and what the user can do about it. Logs aren't optional — they're the program's memory of its own behavior.
 
 **Instantiations:**
-<!-- [ADAPT] Add examples. Examples:
-     - "API errors include HTTP status + response body + suggested fix"
-     - "Build failures show the exact file and line"
-     - "Startup checks verify all required env vars before proceeding"
--->
-*None yet — add concrete examples as the project grows.*
+- **Honest Current State table** — CLAUDE.md maintains a status table for every game system (Working / MISSING / BROKEN). Updated each session.
+- **Schmiede upgrade feedback** — success/fail result shows item name, new rarity, and animates in/out. Player knows exactly what happened.
+- **Loot drop notifications** — rarity-colored toast with item name and emoji appears on enemy kill. No silent inventory additions.
+- **Prestige celebration overlay** — "AUFSTIEG!" screen shows new level, amount invested, and stage reset message. Player understands the prestige mechanic.
 
 **Demands:**
 - Every error message is actionable (says what to do, not just what happened)
@@ -96,11 +91,10 @@ When you find a bug, the bug is never alone. The same mistake that caused it exi
 This applies to architecture too. If a design keeps producing the same class of bug, the design is wrong — not the individual bugs.
 
 **Instantiations:**
-<!-- [ADAPT] Add examples. Examples:
-     - "Found missing null check — grepped for all `.property` accesses, fixed 4 more"
-     - "Same validation bug in 3 endpoints — extracted shared validator"
--->
-*None yet — add concrete examples as the project grows.*
+- **Store mutation pattern** — found Taverne mutating gameStore directly. Grepped for `setState` in all village components, found same issue in Schmiede. Fixed both by adding `spendTokens()` and `upgradeItem()` store actions.
+- **Nested scroll pattern** — user reported 3 scrollbars. Audited all components for `overflow-y-auto`, found 5 instances (VideoFeed, PortfolioView, EquipmentPanel, Schmiede, MilestoneTrack). Removed all, established single-scroll architecture. Added Trap #14 to prevent recurrence.
+- **`buffStat` type safety** — found loose `string` type with unsafe `as` cast in buffs.ts. Tightened to union type in `FinancialProduct.buffStat`, which made the cast unnecessary and prevents invalid stat names at compile time.
+- **`BASELINE_RATE` duplication** — same 0.02 hardcoded in savingsStore and OnboardingView. Exported const from savingsStore, imported in OnboardingView. Added to cross-file contracts table.
 
 **Demands:**
 - Every bug fix includes a search for the same pattern across the codebase
@@ -117,12 +111,9 @@ This applies to architecture too. If a design keeps producing the same class of 
 API keys are not config — they're secrets. They belong in environment variables or encrypted storage, never in localStorage, never in plaintext, never logged, never in error messages. Security is not a feature you add later. It's a property of every line of code.
 
 **Instantiations:**
-<!-- [ADAPT] Add examples. Examples:
-     - "API keys in .env, never committed (in .gitignore)"
-     - "Error messages never include credentials or tokens"
-     - "HTTPS enforced for all external API calls"
--->
-*None yet — add concrete examples as the project grows.*
+- **No real bank credentials** — mock bank adapter (`adapters/mockBank.ts`) uses localStorage, no real API keys or bank connections in the hackathon prototype.
+- **Closed-by-default token spending** — `spendTokens()` returns `false` if balance insufficient. UI disables buttons when `canUpgrade` is false. No way to spend tokens you don't have.
+- **localStorage only stores game state** — no PII, no credentials, no secrets. Keys are versioned (`100k-savings-v1`) for safe schema evolution.
 
 **Demands:**
 - **Closed by default** — empty allowlists mean "deny all", not "allow all." Permissions, access lists, feature flags: the safe default is always "no"

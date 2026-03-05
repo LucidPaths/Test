@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { GameView } from './features/game/GameView'
-import { EducationView } from './features/education/EducationView'
+import { VillageView } from './features/village/VillageView'
 import { PortfolioView } from './features/portfolio/PortfolioView'
 import { OnboardingView } from './features/onboarding/OnboardingView'
 import { CurrencyDisplay } from './components/CurrencyDisplay'
@@ -9,11 +9,11 @@ import { useCharacterStore } from './stores/characterStore'
 import { useGameStore } from './stores/gameStore'
 import { useEquipmentStore } from './stores/equipmentStore'
 
-type Tab = 'game' | 'learn' | 'portfolio'
+type Tab = 'game' | 'village' | 'portfolio'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'game', label: 'Kampf', icon: '⚔️' },
-  { id: 'learn', label: 'Lernen', icon: '📚' },
+  { id: 'village', label: 'Dorf', icon: '🏘️' },
   { id: 'portfolio', label: 'Portfolio', icon: '📊' },
 ]
 
@@ -29,6 +29,7 @@ function App() {
   const recalculate = useCharacterStore((s) => s.recalculate)
   const spawnEnemy = useGameStore((s) => s.spawnEnemy)
   const resetCombat = useGameStore((s) => s.resetCombat)
+  const combatTokens = useGameStore((s) => s.combatTokens)
   const fullResetEquipment = useEquipmentStore((s) => s.fullReset)
 
   const currentSimAge = age + Math.floor(simulatedMonths / 12)
@@ -52,16 +53,18 @@ function App() {
 
   return (
     <div className="flex flex-col h-full max-w-md mx-auto w-full relative">
-      {/* Top bar — fixed at top */}
+      {/* Top bar */}
       <header className="sticky top-0 z-20 flex items-center justify-between px-3 py-2 bg-rpg-panel border-b border-rpg-border shrink-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-base">⚔️</span>
+        <div className="flex items-center gap-2">
           <span className="font-pixel text-[8px] text-rpg-text">100K</span>
+          <span className="font-pixel text-[8px] text-gold">Lv.{level}</span>
         </div>
-        <CurrencyDisplay amount={balance} size="sm" />
+        <div className="flex items-center gap-3">
+          <CurrencyDisplay amount={balance} size="sm" />
+          <span className="font-pixel text-[9px] text-amber-400">🪙 {combatTokens}</span>
+        </div>
         <div className="flex items-center gap-2">
           <span className="font-pixel text-[7px] text-rpg-muted">Alter {currentSimAge}</span>
-          <span className="font-pixel text-[8px] text-gold">Lv.{level}</span>
           <button
             onClick={() => {
               resetGame()
@@ -71,25 +74,25 @@ function App() {
             }}
             className="font-pixel text-[7px] text-rpg-accent border border-rpg-accent/30 rounded px-1.5 py-0.5 cursor-pointer hover:bg-rpg-accent/20 transition-colors"
           >
-            RESET
+            RST
           </button>
         </div>
       </header>
 
-      {/* Content — scrollable, with bottom padding for fixed nav */}
+      {/* Content */}
       <main className="flex-1 overflow-y-auto pb-16">
         {activeTab === 'game' && <GameView />}
-        {activeTab === 'learn' && <EducationView />}
+        {activeTab === 'village' && <VillageView />}
         {activeTab === 'portfolio' && <PortfolioView />}
       </main>
 
-      {/* Bottom nav — fixed at bottom */}
+      {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 max-w-md mx-auto flex bg-rpg-panel border-t border-rpg-border">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex flex-col items-center gap-1 py-2 cursor-pointer transition-colors ${
+            className={`flex-1 flex flex-col items-center gap-0.5 py-2 cursor-pointer transition-colors ${
               activeTab === tab.id
                 ? 'text-gold bg-rpg-bg'
                 : 'text-rpg-muted hover:text-rpg-text'

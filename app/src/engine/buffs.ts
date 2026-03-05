@@ -18,7 +18,7 @@ export function getActiveBuffs(balance: number, products: FinancialProduct[]): B
         name: product.buffName,
         icon: product.type === 'sparplan' ? '📈' : product.type === 'etf' ? '🌐' : '🏠',
         description: product.buffDescription,
-        stat: product.buffStat as Buff['stat'],
+        stat: product.buffStat,
         value: product.buffValue,
         source: 'product',
       })

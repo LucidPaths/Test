@@ -1,16 +1,74 @@
-# Claude Starter Kit
+# 100K Quest — Hack Your Future
 
-A portable folder you drop into any repo to bootstrap high-quality, auditable, future-proofed AI-assisted development with Claude Code. Distilled from battle-tested patterns in the [HIVE](https://github.com/LucidPaths/HiveMind) project.
+A financial literacy RPG idle game for VR Bank that gamifies the journey to saving EUR 100K. Built as a hackathon prototype with a Claude Code starter kit for development quality.
+
+**Core metaphor:** real savings transactions power RPG character progression along a compound interest curve. Save money → level up → fight monsters → earn tokens → upgrade gear → repeat.
 
 ## Quick Start
 
-1. **Copy** the contents of this folder into your repo root
-2. **Commit** the files so Claude Code picks them up
-3. **Start a Claude Code session** — the hooks and CLAUDE.md activate automatically
+```bash
+cd app
+npm install
+npm run dev
+```
 
-On first session, Claude will explore your codebase and fill in the `[ADAPT]` sections in CLAUDE.md. Future sessions build on that foundation.
+Open `http://localhost:5173` on a mobile viewport (375×812).
 
-## What's Inside
+## Tech Stack
+
+- **React + TypeScript + Vite** — fast builds, type safety
+- **Tailwind CSS v4** — utility-first styling with `@theme` directive
+- **Zustand** — state management with `persist` middleware (4 stores)
+- **Framer Motion** — animations (loot drops, prestige, damage numbers)
+- **Recharts** — compound interest visualization
+- **Press Start 2P** — pixel art font
+
+## Game Architecture
+
+```
+app/src/
+├── engine/              # Pure game math (no React)
+│   ├── compound.ts      # Compound interest projections
+│   ├── progression.ts   # Level/XP/DPS from balance
+│   ├── loot.ts          # Drop rates, rarity, pity system
+│   ├── buffs.ts         # Milestone + product buff calculations
+│   └── milestones.ts    # Savings milestone definitions
+├── stores/              # Zustand state (persisted to localStorage)
+│   ├── savingsStore.ts  # Balance, transactions, products
+│   ├── characterStore.ts # Level, stats derived from balance
+│   ├── gameStore.ts     # Enemy HP, combat tokens, damage
+│   └── equipmentStore.ts # Inventory, equipped gear, stages
+├── types/               # Shared TypeScript types
+│   ├── equipment.ts     # Rarity, EquipSlot, GearItem, RARITY_CONFIG
+│   ├── character.ts     # Character, Buff types
+│   ├── savings.ts       # Transaction, FinancialProduct
+│   └── game.ts          # DamageNumber, EnemyState
+├── features/
+│   ├── game/            # Main tab: arena, character, curve, micro-save
+│   ├── village/         # Village tab: Taverne, Schmiede, Akademie
+│   ├── portfolio/       # Portfolio tab: financial products → buffs
+│   ├── education/       # Video feed (used by Akademie)
+│   └── onboarding/      # First-time setup flow
+├── components/          # Shared UI atoms (HealthBar, StatBadge, etc.)
+├── data/                # Static game content (facts, products, videos)
+└── App.tsx              # Router + layout + tab navigation
+```
+
+## Key Game Systems
+
+| System | Description |
+|--------|-------------|
+| **Micro-saves** | RPG-themed buttons that add real EUR to savings balance |
+| **Idle combat** | RAF loop deals DPS to enemies, drops loot on kill |
+| **Loot & equipment** | 5 rarity tiers, 4 gear slots, pity counter (15 threshold) |
+| **Prestige** | Monthly deposit resets combat stage, boosts power |
+| **Village** | Spend combat tokens: Taverne (facts), Schmiede (upgrades), Akademie (videos) |
+| **Compound curve** | Recharts visualization of savings growth over time |
+| **Milestones** | €10 → €100 → €1K → €10K → €100K unlock permanent buffs |
+
+## Claude Code Starter Kit
+
+This repo includes a portable development harness for Claude Code sessions:
 
 | File | Type | Purpose |
 |------|------|---------|
@@ -21,16 +79,16 @@ On first session, Claude will explore your codebase and fill in the `[ADAPT]` se
 | `.claude/hooks/maintenance-check.py` | Fixed | Blocks session end if code changed but docs weren't updated |
 | `.claude/skills/structured-reasoning.md` | Fixed | Decision framework: priority hierarchy, stuck protocol, decomposition triggers |
 | `.claude/skills/project-status.md` | Fixed | `/project-status` skill for quick project state overview |
-| `.claude/skills/research-then-implement.md` | Fixed | `/research-decide` skill — two-phase pattern: research → decision file → implement with fresh context |
-| `.claude/skills/adversarial-review.md` | Fixed | `/adversarial-review` skill — three-pass bug verification (bug hunter → disprover → referee) |
+| `.claude/skills/research-then-implement.md` | Fixed | `/research-decide` skill — two-phase research → implement |
+| `.claude/skills/adversarial-review.md` | Fixed | `/adversarial-review` skill — three-pass bug verification |
 | `.claude/PR_GUIDELINES.md` | Fixed | Standardized PR description format and commit conventions |
-| `docs/TASK_CONTRACT_TEMPLATE.md` | Template | Copy per-task to define explicit acceptance criteria and done conditions |
+| `docs/TASK_CONTRACT_TEMPLATE.md` | Template | Copy per-task to define explicit acceptance criteria |
 
 ### Fixed vs Adaptive
 
-**Fixed** files contain universal truths — coding standards, decision frameworks, git workflows. They work as-is in any project. Don't modify them unless you have a strong reason.
+**Fixed** files contain universal truths — coding standards, decision frameworks, git workflows. They work as-is in any project.
 
-**Adaptive** sections (marked with `<!-- [ADAPT] ... -->` in HTML comments) are placeholders that Claude fills in as it learns your specific project. These include: project overview, key directories, build commands, architecture patterns, and project-specific traps.
+**Adaptive** sections (marked with `<!-- [ADAPT] ... -->` in HTML comments) are placeholders filled with project-specific content. These include: cross-file contracts, project traps, current state tables, and principle instantiations.
 
 ## Requirements
 

@@ -2,10 +2,7 @@ import { VIDEOS } from '../../data/videos'
 
 export function VideoFeed() {
   return (
-    <div
-      className="flex flex-col gap-3 overflow-y-auto flex-1 snap-y snap-mandatory"
-      style={{ scrollSnapType: 'y mandatory' }}
-    >
+    <div className="flex flex-col gap-3">
       {VIDEOS.map((video) => (
         <div
           key={video.id}

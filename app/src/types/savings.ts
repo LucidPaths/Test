@@ -15,7 +15,7 @@ export interface FinancialProduct {
   annualRate: number
   buffName: string
   buffDescription: string
-  buffStat: string
+  buffStat: 'attack' | 'defense' | 'critChance' | 'allStats'
   buffValue: number
   active: boolean
 }

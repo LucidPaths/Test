@@ -3,32 +3,31 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useSavingsStore } from '../../stores/savingsStore'
 import { useCharacterStore } from '../../stores/characterStore'
 import { useEquipmentStore } from '../../stores/equipmentStore'
+import { useGameStore } from '../../stores/gameStore'
 
 /**
  * MVP dev tool: simulates a monthly vesting arriving.
- * In production this would be triggered by real bank data.
- *
  * This is the PRESTIGE EVENT:
  * 1. Balance grows (monthly contribution + interest)
  * 2. Character level recalculates from new balance
  * 3. Combat stage resets to 1 (prestige reset)
  * 4. Non-legendary gear is cleared (legendary persists)
- * 5. Player replays early content at higher power = dopamine rush
+ * 5. New enemy spawns at stage 1
+ * 6. Player replays early content at higher power = dopamine rush
  */
 export function SkipMonthButton() {
   const simulateTick = useSavingsStore((s) => s.simulateTick)
   const monthlyContribution = useSavingsStore((s) => s.monthlyContribution)
   const simulatedMonths = useSavingsStore((s) => s.simulatedMonths)
   const recalculate = useCharacterStore((s) => s.recalculate)
+  const level = useCharacterStore((s) => s.level)
   const prestigeReset = useEquipmentStore((s) => s.prestigeReset)
   const highestStage = useEquipmentStore((s) => s.highestStage)
+  const spawnEnemy = useGameStore((s) => s.spawnEnemy)
 
-  const [showPrestige, setShowPrestige] = useState(false)
+  const [prestigeLevel, setPrestigeLevel] = useState<number | null>(null)
 
   const handlePrestige = () => {
-    const oldLevel = useCharacterStore.getState().level
-    const oldBalance = useSavingsStore.getState().balance
-
     // 1. Add monthly vesting to balance
     simulateTick()
     const { balance, products } = useSavingsStore.getState()
@@ -40,12 +39,12 @@ export function SkipMonthButton() {
     // 3. Prestige: reset combat stage, keep legendary gear
     prestigeReset()
 
-    // 4. Show prestige celebration
-    setShowPrestige(true)
-    setTimeout(() => setShowPrestige(false), 3000)
+    // 4. Spawn fresh enemy at stage 1
+    spawnEnemy(1)
 
-    // Log for debugging
-    console.log(`[Prestige] Balance: €${oldBalance.toFixed(0)} → €${balance.toFixed(0)} | Lv.${oldLevel} → Lv.${newLevel} | Stage reset to 1`)
+    // 5. Show prestige celebration with the new level
+    setPrestigeLevel(newLevel)
+    setTimeout(() => setPrestigeLevel(null), 3000)
   }
 
   return (
@@ -62,7 +61,7 @@ export function SkipMonthButton() {
 
       {/* Prestige celebration overlay */}
       <AnimatePresence>
-        {showPrestige && (
+        {prestigeLevel !== null && (
           <motion.div
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -83,7 +82,7 @@ export function SkipMonthButton() {
                 +€{monthlyContribution} investiert
               </div>
               <div className="font-pixel text-[7px] text-rpg-accent mt-0.5">
-                Lv.{useCharacterStore.getState().level} — Stufe zurückgesetzt
+                Lv.{prestigeLevel} — Stufe zurückgesetzt
               </div>
             </div>
           </motion.div>

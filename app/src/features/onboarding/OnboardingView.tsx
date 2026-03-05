@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { useSavingsStore } from '../../stores/savingsStore'
+import { useSavingsStore, BASELINE_RATE } from '../../stores/savingsStore'
 import { monthsToTarget } from '../../engine/compound'
 
 const CONTRIBUTION_PRESETS = [25, 50, 100, 200]
-// Tagesgeld baseline rate — matches getBlendedRate default when no products active
-const BASELINE_RATE = 0.02
 
 export function OnboardingView() {
   const age = useSavingsStore((s) => s.age)
