@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gold: #fbbf24;
+  --color-gold-dark: #d97706;
+  --color-hp-red: #ef4444;
+  --color-hp-dark: #991b1b;
+  --color-mana-blue: #3b82f6;
+  --color-xp-green: #22c55e;
+  --color-xp-dark: #15803d;
+  --color-rpg-bg: #1a1a2e;
+  --color-rpg-panel: #16213e;
+  --color-rpg-border: #0f3460;
+  --color-rpg-accent: #e94560;
+  --color-rpg-text: #eee;
+  --color-rpg-muted: #888;
+  --font-pixel: 'Press Start 2P', monospace;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--color-rpg-bg);
+    color: var(--color-rpg-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  #root {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+  img {
+    image-rendering: pixelated;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes float-up {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-40px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(251, 191, 36, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.8); }
+}
+
+@keyframes idle-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
+}
+
+.animate-float-up {
+  animation: float-up 1s ease-out forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-idle-bob {
+  animation: idle-bob 1.5s ease-in-out infinite;
+}
