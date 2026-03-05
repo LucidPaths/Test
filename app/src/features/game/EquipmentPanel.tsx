@@ -115,7 +115,7 @@ export function EquipmentPanel() {
                 {filterSlot ? 'Keine Gegenstände in diesem Slot.' : 'Noch keine Gegenstände. Besiege Monster!'}
               </div>
             ) : (
-              <div className="flex flex-col gap-1 max-h-44 overflow-y-auto">
+              <div className="flex flex-col gap-1">
                 {filteredInventory.map((item) => (
                   <InventoryRow key={item.id} item={item} onEquip={equip} equipped={equipped} />
                 ))}

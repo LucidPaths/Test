@@ -20,6 +20,8 @@ interface EquipmentStore {
   unequip: (slot: EquipSlot) => void
   advanceStage: () => void
   setPityCounter: (n: number) => void
+  // Upgrade item rarity + stats in place
+  upgradeItem: (itemId: string, newRarity: GearItem['rarity'], statMultiplier: number) => void
   // Prestige: reset stage but keep legendary gear
   prestigeReset: () => void
   fullReset: () => void
@@ -61,6 +63,26 @@ export const useEquipmentStore = create<EquipmentStore>()(
         }),
 
       setPityCounter: (n) => set({ pityCounter: n }),
+
+      upgradeItem: (itemId, newRarity, statMultiplier) =>
+        set((s) => {
+          const upgrade = (item: GearItem): GearItem => ({
+            ...item,
+            rarity: newRarity,
+            attack: item.attack > 0 ? Math.floor(item.attack * statMultiplier) : 0,
+            defense: item.defense > 0 ? Math.floor(item.defense * statMultiplier) : 0,
+            critChance: item.critChance > 0 ? Math.round(item.critChance * statMultiplier * 1000) / 1000 : 0,
+            goldFind: item.goldFind > 0 ? Math.round(item.goldFind * statMultiplier * 100) / 100 : 0,
+          })
+          const newInventory = s.inventory.map((i) => (i.id === itemId ? upgrade(i) : i))
+          const newEquipped = { ...s.equipped }
+          for (const slot of Object.keys(newEquipped) as EquipSlot[]) {
+            if (newEquipped[slot]?.id === itemId) {
+              newEquipped[slot] = upgrade(newEquipped[slot]!)
+            }
+          }
+          return { inventory: newInventory, equipped: newEquipped }
+        }),
 
       // Monthly prestige: reset stage to 1, clear non-legendary inventory
       prestigeReset: () => {

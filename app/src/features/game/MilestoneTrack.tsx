@@ -6,7 +6,7 @@ export function MilestoneTrack() {
   const balance = useSavingsStore((s) => s.balance)
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+    <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
       {MILESTONES.map((m) => (
         <MilestoneChip key={m.threshold} milestone={m} unlocked={balance >= m.threshold} />
       ))}

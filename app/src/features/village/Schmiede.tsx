@@ -5,7 +5,6 @@ import { useGameStore } from '../../stores/gameStore'
 import type { GearItem, Rarity } from '../../types/equipment'
 import { RARITY_CONFIG, SLOT_LABELS } from '../../types/equipment'
 
-// Upgrade cost and success rate per current rarity
 const UPGRADE_TABLE: Record<Rarity, { cost: number; successRate: number; nextRarity: Rarity | null }> = {
   common:    { cost: 15,  successRate: 0.80, nextRarity: 'uncommon' },
   uncommon:  { cost: 40,  successRate: 0.60, nextRarity: 'rare' },
@@ -14,16 +13,17 @@ const UPGRADE_TABLE: Record<Rarity, { cost: number; successRate: number; nextRar
   legendary: { cost: 0,   successRate: 0,    nextRarity: null },
 }
 
-// When upgrading, stats get multiplied by this factor
 const STAT_BOOST_ON_UPGRADE = 2.2
 
 export function Schmiede({ onBack }: { onBack: () => void }) {
   const inventory = useEquipmentStore((s) => s.inventory)
   const equipped = useEquipmentStore((s) => s.equipped)
+  const upgradeItem = useEquipmentStore((s) => s.upgradeItem)
   const combatTokens = useGameStore((s) => s.combatTokens)
+  const spendTokens = useGameStore((s) => s.spendTokens)
 
-  const [selectedItem, setSelectedItem] = useState<GearItem | null>(null)
-  const [result, setResult] = useState<'success' | 'fail' | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [result, setResult] = useState<{ type: 'success' | 'fail'; itemName: string; rarity: Rarity } | null>(null)
   const [resultKey, setResultKey] = useState(0)
 
   // All gear: equipped + inventory (deduplicated)
@@ -32,43 +32,21 @@ export function Schmiede({ onBack }: { onBack: () => void }) {
     ...inventory.filter((i) => !Object.values(equipped).some((e) => e?.id === i.id)),
   ]
 
+  const selectedItem = allGear.find((i) => i.id === selectedId) ?? null
   const upgradeInfo = selectedItem ? UPGRADE_TABLE[selectedItem.rarity] : null
   const canUpgrade = selectedItem && upgradeInfo?.nextRarity && combatTokens >= (upgradeInfo?.cost ?? Infinity)
 
   const handleUpgrade = () => {
     if (!selectedItem || !upgradeInfo?.nextRarity) return
-    if (combatTokens < upgradeInfo.cost) return
-
-    // Pay tokens
-    useGameStore.setState((s) => ({ combatTokens: s.combatTokens - upgradeInfo.cost }))
+    if (!spendTokens(upgradeInfo.cost)) return
 
     const success = Math.random() < upgradeInfo.successRate
 
     if (success) {
-      // Upgrade the item: change rarity, boost stats
-      const upgraded: GearItem = {
-        ...selectedItem,
-        rarity: upgradeInfo.nextRarity,
-        attack: selectedItem.attack > 0 ? Math.floor(selectedItem.attack * STAT_BOOST_ON_UPGRADE) : 0,
-        defense: selectedItem.defense > 0 ? Math.floor(selectedItem.defense * STAT_BOOST_ON_UPGRADE) : 0,
-        critChance: selectedItem.critChance > 0 ? Math.round(selectedItem.critChance * STAT_BOOST_ON_UPGRADE * 1000) / 1000 : 0,
-        goldFind: selectedItem.goldFind > 0 ? Math.round(selectedItem.goldFind * STAT_BOOST_ON_UPGRADE * 100) / 100 : 0,
-      }
-
-      // Update in inventory or equipped
-      useEquipmentStore.setState((s) => {
-        const newInventory = s.inventory.map((i) => (i.id === selectedItem.id ? upgraded : i))
-        const newEquipped = { ...s.equipped }
-        if (newEquipped[selectedItem.slot]?.id === selectedItem.id) {
-          newEquipped[selectedItem.slot] = upgraded
-        }
-        return { inventory: newInventory, equipped: newEquipped }
-      })
-
-      setSelectedItem(upgraded)
-      setResult('success')
+      upgradeItem(selectedItem.id, upgradeInfo.nextRarity, STAT_BOOST_ON_UPGRADE)
+      setResult({ type: 'success', itemName: selectedItem.name, rarity: upgradeInfo.nextRarity })
     } else {
-      setResult('fail')
+      setResult({ type: 'fail', itemName: selectedItem.name, rarity: selectedItem.rarity })
     }
 
     setResultKey((k) => k + 1)
@@ -77,7 +55,6 @@ export function Schmiede({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="flex flex-col gap-3 p-3">
-      {/* Header */}
       <div className="flex items-center gap-2">
         <button
           onClick={onBack}
@@ -104,15 +81,15 @@ export function Schmiede({ onBack }: { onBack: () => void }) {
             </span>
           </div>
         ) : (
-          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto mb-3">
+          <div className="flex flex-col gap-1 mb-3">
             {allGear.map((item) => {
-              const isSelected = selectedItem?.id === item.id
+              const isSelected = selectedId === item.id
               const info = UPGRADE_TABLE[item.rarity]
               const isMaxed = !info.nextRarity
               return (
                 <button
                   key={item.id}
-                  onClick={() => !isMaxed && setSelectedItem(isSelected ? null : item)}
+                  onClick={() => !isMaxed && setSelectedId(isSelected ? null : item.id)}
                   className={`flex items-center gap-2 px-2 py-1.5 rounded border text-left transition-colors ${
                     isMaxed
                       ? 'border-rpg-border opacity-40 cursor-not-allowed'
@@ -128,10 +105,10 @@ export function Schmiede({ onBack }: { onBack: () => void }) {
                       <span className="text-rpg-muted ml-1">{SLOT_LABELS[item.slot].emoji}</span>
                     </div>
                     <div className="font-pixel text-[6px] text-rpg-muted flex gap-2">
-                      {item.attack > 0 && <span>+{item.attack} ATK</span>}
-                      {item.defense > 0 && <span>+{item.defense} DEF</span>}
-                      {item.critChance > 0 && <span>+{(item.critChance * 100).toFixed(1)}%K</span>}
-                      {item.goldFind > 0 && <span>+{(item.goldFind * 100).toFixed(0)}%🪙</span>}
+                      {item.attack > 0 && <span>⚔️ {item.attack}</span>}
+                      {item.defense > 0 && <span>🛡️ {item.defense}</span>}
+                      {item.critChance > 0 && <span>💥 {(item.critChance * 100).toFixed(1)}%</span>}
+                      {item.goldFind > 0 && <span>🪙 +{(item.goldFind * 100).toFixed(0)}%</span>}
                     </div>
                   </div>
                   <span className="font-pixel text-[6px]" style={{ color: RARITY_CONFIG[item.rarity].color }}>
@@ -146,19 +123,16 @@ export function Schmiede({ onBack }: { onBack: () => void }) {
         {/* Upgrade preview */}
         {selectedItem && upgradeInfo?.nextRarity && (
           <div className="bg-rpg-bg border border-rpg-border rounded-lg p-3 mb-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1">
-                <span className="font-pixel text-[7px]" style={{ color: RARITY_CONFIG[selectedItem.rarity].color }}>
-                  {RARITY_CONFIG[selectedItem.rarity].label}
-                </span>
-                <span className="font-pixel text-[7px] text-rpg-muted">→</span>
-                <span className="font-pixel text-[7px]" style={{ color: RARITY_CONFIG[upgradeInfo.nextRarity].color }}>
-                  {RARITY_CONFIG[upgradeInfo.nextRarity].label}
-                </span>
-              </div>
+            <div className="flex items-center gap-1 mb-2">
+              <span className="font-pixel text-[7px]" style={{ color: RARITY_CONFIG[selectedItem.rarity].color }}>
+                {RARITY_CONFIG[selectedItem.rarity].label}
+              </span>
+              <span className="font-pixel text-[7px] text-rpg-muted">→</span>
+              <span className="font-pixel text-[7px]" style={{ color: RARITY_CONFIG[upgradeInfo.nextRarity].color }}>
+                {RARITY_CONFIG[upgradeInfo.nextRarity].label}
+              </span>
             </div>
 
-            {/* Success chance bar */}
             <div className="mb-2">
               <div className="flex justify-between mb-1">
                 <span className="font-pixel text-[7px] text-rpg-muted">Erfolg</span>
@@ -200,7 +174,7 @@ export function Schmiede({ onBack }: { onBack: () => void }) {
           </button>
         )}
 
-        {/* Result overlay */}
+        {/* Result feedback */}
         <AnimatePresence>
           {result && (
             <motion.div
@@ -210,22 +184,22 @@ export function Schmiede({ onBack }: { onBack: () => void }) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, type: 'spring' }}
               className={`mt-3 py-3 rounded-lg border text-center ${
-                result === 'success'
+                result.type === 'success'
                   ? 'border-xp-green/50 bg-xp-green/10'
                   : 'border-rpg-accent/50 bg-rpg-accent/10'
               }`}
             >
-              <span className="text-2xl">{result === 'success' ? '✨' : '💔'}</span>
+              <span className="text-2xl">{result.type === 'success' ? '✨' : '💔'}</span>
               <div className={`font-pixel text-[9px] mt-1 ${
-                result === 'success' ? 'text-xp-green' : 'text-rpg-accent'
+                result.type === 'success' ? 'text-xp-green' : 'text-rpg-accent'
               }`}>
-                {result === 'success' ? 'Verbesserung gelungen!' : 'Fehlgeschlagen...'}
+                {result.type === 'success' ? 'Verbesserung gelungen!' : 'Fehlgeschlagen...'}
               </div>
-              {result === 'success' && selectedItem && (
+              {result.type === 'success' && (
                 <div className="font-pixel text-[7px] text-rpg-muted mt-1">
-                  {selectedItem.name} ist jetzt{' '}
-                  <span style={{ color: RARITY_CONFIG[selectedItem.rarity].color }}>
-                    {RARITY_CONFIG[selectedItem.rarity].label}
+                  {result.itemName} ist jetzt{' '}
+                  <span style={{ color: RARITY_CONFIG[result.rarity].color }}>
+                    {RARITY_CONFIG[result.rarity].label}
                   </span>!
                 </div>
               )}

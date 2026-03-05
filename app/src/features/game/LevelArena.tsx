@@ -50,7 +50,7 @@ export function LevelArena() {
       const isCrit = Math.random() < critChance
       const dmg = isCrit ? Math.floor(dps * 2) : dps
 
-      const died = dealDamage(dmg, isCrit)
+      const died = dealDamage(dmg, isCrit, gear.goldFind)
       addDamageNumber(dmg, isCrit)
       shakeRef.current = true
       forceUpdate()

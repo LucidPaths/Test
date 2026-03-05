@@ -74,3 +74,21 @@
 .animate-idle-bob {
   animation: idle-bob 1.5s ease-in-out infinite;
 }
+
+/* Hide scrollbars but keep scroll functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Make all scrollbars in the app seamless */
+main {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+main::-webkit-scrollbar {
+  display: none;
+}

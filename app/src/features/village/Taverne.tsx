@@ -7,6 +7,7 @@ const FACT_COST = 5
 
 export function Taverne({ onBack }: { onBack: () => void }) {
   const combatTokens = useGameStore((s) => s.combatTokens)
+  const spendTokens = useGameStore((s) => s.spendTokens)
   const [currentFact, setCurrentFact] = useState<typeof TAVERN_FACTS[number] | null>(null)
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
   const [factKey, setFactKey] = useState(0)
@@ -14,10 +15,7 @@ export function Taverne({ onBack }: { onBack: () => void }) {
   const canAfford = combatTokens >= FACT_COST
 
   const handleDrink = () => {
-    if (!canAfford) return
-
-    // Deduct tokens
-    useGameStore.setState((s) => ({ combatTokens: s.combatTokens - FACT_COST }))
+    if (!spendTokens(FACT_COST)) return
 
     // Pick a random unseen fact, or any random if all seen
     const unseen = TAVERN_FACTS.filter((f) => !seenIds.has(f.id))
