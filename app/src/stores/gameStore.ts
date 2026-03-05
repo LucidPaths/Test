@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware'
 import type { Enemy, DamageNumber, ActiveSpellBuff, ActiveDoT } from '../types/game'
 import type { ZoneEnemy, ZoneDef } from '../types/zone'
 import { getZoneEnemyHP } from '../engine/zones'
+import { TRAIT_SHIELD_HITS } from '../engine/combat'
+import { INITIAL_MANA, INITIAL_MAX_MANA } from '../constants/gameBalances'
 
 interface GameStore {
   enemy: Enemy
@@ -36,6 +38,8 @@ interface GameStore {
   addDoT: (dot: ActiveDoT) => void
   tickDoTs: (dps: number) => number  // returns total DoT damage this tick
   cleanExpiredBuffs: () => void
+  decrementShield: () => void
+  healEnemy: (amount: number) => void
   resetCombat: () => void
 }
 
@@ -55,8 +59,8 @@ export const useGameStore = create<GameStore>()(
       combatTokens: 0,
       killStreak: 0,
       bestStreak: 0,
-      mana: 50,
-      maxMana: 50,
+      mana: INITIAL_MANA,
+      maxMana: INITIAL_MAX_MANA,
       activeSpellBuffs: [],
       activeDots: [],
 
@@ -71,7 +75,7 @@ export const useGameStore = create<GameStore>()(
             level: zone.unlockMonth * 10 + 1,
             isBoss: zoneEnemy.isBoss,
             traits: [...zoneEnemy.traits],
-            shieldHitsRemaining: zoneEnemy.traits.includes('shielded') ? 3 : 0,
+            shieldHitsRemaining: zoneEnemy.traits.includes('shielded') ? TRAIT_SHIELD_HITS : 0,
             enrageTriggered: false,
           },
         })
@@ -196,6 +200,22 @@ export const useGameStore = create<GameStore>()(
         }))
       },
 
+      decrementShield: () =>
+        set((s) => ({
+          enemy: {
+            ...s.enemy,
+            shieldHitsRemaining: Math.max(0, s.enemy.shieldHitsRemaining - 1),
+          },
+        })),
+
+      healEnemy: (amount) =>
+        set((s) => ({
+          enemy: {
+            ...s.enemy,
+            hp: Math.min(s.enemy.maxHp, s.enemy.hp + amount),
+          },
+        })),
+
       resetCombat: () => set({
         enemy: { ...DEFAULT_ENEMY },
         damageNumbers: [],
@@ -203,8 +223,8 @@ export const useGameStore = create<GameStore>()(
         combatTokens: 0,
         killStreak: 0,
         bestStreak: 0,
-        mana: 50,
-        maxMana: 50,
+        mana: INITIAL_MANA,
+        maxMana: INITIAL_MAX_MANA,
         activeSpellBuffs: [],
         activeDots: [],
         lastTick: Date.now(),

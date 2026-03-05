@@ -121,8 +121,15 @@ When two files must agree on a string value, format, or list — there MUST be a
 | Equipment slot definitions | `app/src/types/equipment.ts` (`EquipSlot`, `SLOT_LABELS`) | `app/src/stores/equipmentStore.ts` (`equipped` shape) | Type-safe — `EquipSlot` union enforces valid slots |
 | Buff stat types | `app/src/types/savings.ts` (`buffStat` union) | `app/src/types/character.ts` (`Buff.stat`), `app/src/engine/buffs.ts` | Type-safe — shared union type, no casts needed |
 | BASELINE_RATE | `app/src/stores/savingsStore.ts` (exported const) | `app/src/features/onboarding/OnboardingView.tsx` (imported) | Single source — imported directly, not duplicated |
-| localStorage keys | Each store's `persist()` call (`100k-savings-v1`, `100k-character-v1`, `100k-game-v1`, `100k-equipment-v1`) | None | Single source — each key lives only in its store file |
-| Token economy (spend/earn) | `app/src/stores/gameStore.ts` (`spendTokens`, `dealDamage`) | Village features (`Taverne.tsx`, `Schmiede.tsx`) | Action-based — village calls `spendTokens()`, never mutates directly |
+| localStorage keys | Each store's `persist()` call (`100k-savings-v2`, `100k-character-v1`, `100k-game-v2`, `100k-equipment-v2`, `100k-spells-v1`, `100k-pets-v1`, `100k-mercenaries-v1`) | None | Single source — each key lives only in its store file |
+| Token economy (spend/earn) | `app/src/stores/gameStore.ts` (`spendTokens`, `dealDamage`) | Village features (`Taverne.tsx`, `Schmiede.tsx`, `Kaserne.tsx`), `mercenaryStore.ts` | Action-based — all call `spendTokens()`, never mutate directly |
+| Game balance constants | `app/src/constants/gameBalances.ts` | Stores + UI that reference caps/limits | Single source — imported, never hardcoded |
+| EnemyTrait union | `app/src/types/zone.ts` (`EnemyTrait`) | `app/src/engine/combat.ts` (trait mechanics), `LevelArena.tsx` (trait display) | Manual — if new trait added, combat engine must handle it |
+| Trait mechanic constants | `app/src/engine/combat.ts` (`TRAIT_*` exports) | `app/src/stores/gameStore.ts` (shield init), `LevelArena.tsx` (via engine) | Single source — imported from engine/combat.ts |
+| Zone IDs | `app/src/data/zones.ts` (zone `id` field) | `equipmentStore.currentZoneId`, `zoneProgress` keys | String-based — validated at zone selection |
+| Spell/Pet/Merc IDs | `app/src/data/spells.ts`, `data/pets.ts`, `data/mercenaries.ts` | Respective stores, zone unlock fields | String-based — data files are source of truth |
+| Mana resource | `gameStore.mana/maxMana` | `spellStore.castSpell()`, `SpellBar.tsx` | Action-based — `castSpell` calls `gameStore.spendMana()` |
+| gameStore fan-in | `gameStore.spendTokens()` / `spendMana()` | `equipmentStore`, `spellStore`, `mercenaryStore` | Cross-store call — 3 stores depend on gameStore actions |
 
 ---
 
@@ -342,11 +349,13 @@ The "Touch carefully" column tells you the blast radius. **Yes** = changes here 
 | `.claude/skills/*.md` | Skill definitions for Claude workflows | Usually safe — self-contained markdown prompts |
 | `.claude/PR_GUIDELINES.md` | PR description format | Usually safe |
 | `README.md` | User-facing documentation | Usually safe |
-| `app/src/engine/*.ts` | Game math — compound interest, progression, loot, buffs, milestones | Moderate — stores depend on these calculations |
-| `app/src/stores/*.ts` | Zustand stores — savings, character, game, equipment | Yes — UI reads from these; actions enforce invariants |
-| `app/src/types/*.ts` | Shared types — equipment, character, savings, game | Yes — cross-file contract source of truth |
-| `app/src/features/game/*.tsx` | Main game tab — arena, character panel, curve, micro-save | Moderate — core gameplay loop |
-| `app/src/features/village/*.tsx` | Village tab — Taverne, Schmiede, Akademie | Usually safe — self-contained token-spend features |
+| `app/src/constants/gameBalances.ts` | Single source of truth for game balance numbers | Yes — 6 stores + UI import from here |
+| `app/src/engine/*.ts` | Game math — combat, progression, zones, loot, spells, pets, mercs, buffs | Moderate — stores depend on these calculations |
+| `app/src/stores/*.ts` | Zustand stores — savings, character, game, equipment, spells, pets, mercenaries | Yes — UI reads from these; actions enforce invariants |
+| `app/src/types/*.ts` | Shared types — equipment, character, savings, game, zone, spell, pet, mercenary | Yes — cross-file contract source of truth |
+| `app/src/data/*.ts` | Static game content — zones (12), spells (7), pets (5), mercenaries (6) | Moderate — engine and stores reference these |
+| `app/src/features/game/*.tsx` | Main game tab — arena, spells, zone map, pets, character panel | Moderate — core gameplay loop |
+| `app/src/features/village/*.tsx` | Village tab — Taverne, Schmiede, Kaserne, Akademie | Usually safe — self-contained token-spend features |
 | `app/src/App.tsx` | Router + layout + tab navigation + store init | Yes — changes here affect all tabs |
 
 ## Current State (Honest Assessment)
@@ -374,27 +383,41 @@ The "Touch carefully" column tells you the blast radius. **Yes** = changes here 
 |-----------|--------|-----|
 | Engine: compound interest | Working | `projectBalance()` drives the Recharts curve |
 | Engine: progression (level/XP/DPS) | Working | Balance → level, gear-aware DPS/crit |
-| Engine: loot system | Working | Stage-scaled drops, 5 rarity tiers, pity counter (15 threshold) |
+| Engine: combat | Working | Trait modifiers, crit calculation, extracted from LevelArena |
+| Engine: loot system | Working | Zone-scaled drops, 5 rarity tiers, pity counter (15 threshold), boss loot |
+| Engine: zones | Working | Encounter generation (shuffle bag), HP/reward scaling, zone unlock checks |
+| Engine: spells | Working | Spell effect application, cooldown management |
+| Engine: pets | Working | Pet bonus calculation, evolution stage resolution |
+| Engine: mercenaries | Working | Party bonus aggregation, merc crit damage rolls |
+| Engine: achievements | Working | Achievement condition checking |
 | Engine: buffs & milestones | Working | Milestone + product buffs feed into character stats |
+| Constants: gameBalances | Working | Single source of truth for inventory cap, mana, spell limits, age/contribution bounds |
 | Store: savingsStore | Working | Balance, transactions, products, monthly tick, blended rate |
 | Store: characterStore | Working | Level/stats derived from balance + products |
-| Store: gameStore | Working | Enemy HP, damage numbers, combat tokens, `spendTokens()` |
-| Store: equipmentStore | Working | Inventory (cap 50), 4 equip slots, stage, `upgradeItem()`, prestige reset |
-| Game tab: LevelArena | Working | RAF combat loop, ref-based stable tick, zone names, loot notifications |
+| Store: gameStore | Working | Enemy HP, mana, damage, combat tokens, streaks, spell buffs, `spendTokens()`, `decrementShield()`, `healEnemy()` |
+| Store: equipmentStore | Working | Inventory (cap 100), 4 equip slots, zone progress, `upgradeItem()`, prestige reset |
+| Store: spellStore | Working | Unlocked/equipped spells (max 3), cooldowns, auto-cast toggle |
+| Store: petStore | Working | Pet collection, XP/leveling, equipped pet (1 at a time) |
+| Store: mercenaryStore | Working | Recruited mercs, party slots (max 2) |
+| Game tab: LevelArena | Working | RAF combat loop, trait engine integration, zone-based spawning, loot notifications |
+| Game tab: SpellBar | Working | 3-slot spell bar with cooldown overlay, mana cost feedback |
+| Game tab: ZoneMap | Working | Zone selection, progress tracking, star ratings |
+| Game tab: PetPanel | Working | Pet display, collection, XP bar |
 | Game tab: CharacterPanel | Working | Gear-aware stats, buff display, equipment slots |
 | Game tab: CompoundCurve | Working | Recharts area chart with contribution slider |
 | Game tab: MicroSaveAction | Working | RPG-themed save buttons trigger balance + character recalc |
 | Game tab: MilestoneTrack | Working | Horizontal milestone progress bar |
 | Game tab: EquipmentPanel | Working | 4 slot cards + inventory list with rarity colors |
-| Game tab: SkipMonthButton | Working | Prestige event: monthly deposit → stage reset → power up |
-| Village tab: VillageView | Working | 2×2 building grid with sub-view navigation |
+| Game tab: SkipMonthButton | Working | Prestige event: monthly deposit → zone unlock |
+| Village tab: VillageView | Working | Building grid with sub-view navigation |
 | Village tab: Taverne | Working | 5-token cost, random financial facts, seen/unseen tracking |
 | Village tab: Schmiede | Working | Upgrade gear by rarity tier, % success, token cost |
+| Village tab: Kaserne | Working | Mercenary recruitment, party management |
 | Village tab: Akademie | Working | Wraps VideoFeed with back navigation |
 | Portfolio tab | Working | Product cards with buff toggle |
 | Onboarding | Working | Setup flow → main app |
 | Scroll architecture | Working | Single `<main>` scroll, hidden scrollbars, no nested overflow |
-| localStorage persistence | Working | 4 stores persist independently with versioned keys |
+| localStorage persistence | Working | 7 stores persist independently with versioned keys |
 
 ## "When Editing X, Check Y" Rules
 

@@ -43,27 +43,6 @@ export function getXPProgress(balance: number): number {
   return Math.min(1, (balance - currentThreshold) / range)
 }
 
-export function getEnemyHP(stage: number): number {
-  return Math.floor(20 * Math.pow(1.12, stage))
-}
-
-export function getEnemyName(stage: number): { name: string; emoji: string } {
-  const enemies = [
-    { name: 'Schulden-Slime', emoji: '🟢' },
-    { name: 'Kontogebühr-Kobold', emoji: '👺' },
-    { name: 'Zins-Zombie', emoji: '🧟' },
-    { name: 'Inflation-Imp', emoji: '😈' },
-    { name: 'Steuer-Skelett', emoji: '💀' },
-    { name: 'Kredit-Kraken', emoji: '🐙' },
-    { name: 'Börsen-Basilisk', emoji: '🐉' },
-    { name: 'Rezessions-Ritter', emoji: '🗡️' },
-    { name: 'Deflations-Drache', emoji: '🔥' },
-    { name: 'Schulden-Souverän', emoji: '👑' },
-  ]
-  const tier = Math.min(Math.floor(stage / 10), enemies.length - 1)
-  return enemies[tier]
-}
-
 /**
  * DPS derives from character level + buffs + equipped gear.
  * Level only changes when monthly vesting hits (real money).

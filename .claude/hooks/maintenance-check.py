@@ -27,6 +27,7 @@ CODE_EXTENSIONS = {
     '.rs', '.go', '.java', '.rb', '.php',
     '.c', '.cpp', '.h', '.swift', '.kt',
     '.css', '.html', '.toml', '.yaml', '.yml',
+    '.vue', '.svelte', '.astro', '.mdx',
 }
 
 

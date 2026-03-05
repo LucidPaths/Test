@@ -1,4 +1,4 @@
-# Structured Reasoning - Quick Reference
+# /structured-reasoning — Decision Framework & Quick Reference
 
 ## Operational Modes
 

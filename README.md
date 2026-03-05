@@ -18,7 +18,7 @@ Open `http://localhost:5173` on a mobile viewport (375×812).
 
 - **React + TypeScript + Vite** — fast builds, type safety
 - **Tailwind CSS v4** — utility-first styling with `@theme` directive
-- **Zustand** — state management with `persist` middleware (4 stores)
+- **Zustand** — state management with `persist` middleware (7 stores)
 - **Framer Motion** — animations (loot drops, prestige, damage numbers)
 - **Recharts** — compound interest visualization
 - **Press Start 2P** — pixel art font
@@ -27,30 +27,53 @@ Open `http://localhost:5173` on a mobile viewport (375×812).
 
 ```
 app/src/
+├── constants/           # Shared game balance constants
+│   └── gameBalances.ts  # Inventory cap, mana, spell limits, age bounds
 ├── engine/              # Pure game math (no React)
 │   ├── compound.ts      # Compound interest projections
 │   ├── progression.ts   # Level/XP/DPS from balance
+│   ├── combat.ts        # Trait modifiers, crit calculation
 │   ├── loot.ts          # Drop rates, rarity, pity system
 │   ├── buffs.ts         # Milestone + product buff calculations
-│   └── milestones.ts    # Savings milestone definitions
+│   ├── milestones.ts    # Savings milestone definitions
+│   ├── zones.ts         # Zone encounter generation, HP/reward scaling
+│   ├── spells.ts        # Spell effect application, cooldowns
+│   ├── pets.ts          # Pet bonus calculation, evolution
+│   ├── mercenaries.ts   # Party bonus aggregation, merc damage
+│   └── achievements.ts  # Achievement condition checking
 ├── stores/              # Zustand state (persisted to localStorage)
 │   ├── savingsStore.ts  # Balance, transactions, products
 │   ├── characterStore.ts # Level, stats derived from balance
-│   ├── gameStore.ts     # Enemy HP, combat tokens, damage
-│   └── equipmentStore.ts # Inventory, equipped gear, stages
+│   ├── gameStore.ts     # Enemy HP, combat tokens, mana, streaks
+│   ├── equipmentStore.ts # Inventory, equipped gear, zone progress
+│   ├── spellStore.ts    # Unlocked/equipped spells, cooldowns
+│   ├── petStore.ts      # Pet collection, XP, evolution
+│   └── mercenaryStore.ts # Recruited mercs, party slots
 ├── types/               # Shared TypeScript types
 │   ├── equipment.ts     # Rarity, EquipSlot, GearItem, RARITY_CONFIG
 │   ├── character.ts     # Character, Buff types
 │   ├── savings.ts       # Transaction, FinancialProduct
-│   └── game.ts          # DamageNumber, EnemyState
+│   ├── game.ts          # Enemy, DamageNumber
+│   ├── zone.ts          # ZoneDef, ZoneEnemy, EnemyTrait, ZoneProgress
+│   ├── spell.ts         # Spell, SpellEffect, ActiveSpellBuff
+│   ├── pet.ts           # Pet, PetBonus, PetEvolution
+│   ├── mercenary.ts     # Mercenary, MercContribution
+│   └── achievement.ts   # Achievement, AchievementCondition
+├── data/                # Static game content
+│   ├── zones.ts         # 12 zone definitions with 60+ enemies
+│   ├── spells.ts        # 7 spell definitions
+│   ├── pets.ts          # 5 pet definitions
+│   ├── mercenaries.ts   # 6 mercenary definitions
+│   ├── products.ts      # Financial product definitions
+│   ├── tavernFacts.ts   # Financial facts for Taverne
+│   └── videos.ts        # Educational video metadata
 ├── features/
-│   ├── game/            # Main tab: arena, character, curve, micro-save
-│   ├── village/         # Village tab: Taverne, Schmiede, Akademie
+│   ├── game/            # Main tab: arena, spells, zone map, pets
+│   ├── village/         # Village tab: Taverne, Schmiede, Kaserne, Akademie
 │   ├── portfolio/       # Portfolio tab: financial products → buffs
 │   ├── education/       # Video feed (used by Akademie)
 │   └── onboarding/      # First-time setup flow
 ├── components/          # Shared UI atoms (HealthBar, StatBadge, etc.)
-├── data/                # Static game content (facts, products, videos)
 └── App.tsx              # Router + layout + tab navigation
 ```
 
@@ -59,10 +82,14 @@ app/src/
 | System | Description |
 |--------|-------------|
 | **Micro-saves** | RPG-themed buttons that add real EUR to savings balance |
-| **Idle combat** | RAF loop deals DPS to enemies, drops loot on kill |
-| **Loot & equipment** | 5 rarity tiers, 4 gear slots, pity counter (15 threshold) |
-| **Prestige** | Monthly deposit resets combat stage, boosts power |
-| **Village** | Spend combat tokens: Taverne (facts), Schmiede (upgrades), Akademie (videos) |
+| **Idle combat** | RAF loop deals DPS to enemies with trait modifiers, drops loot on kill |
+| **Zone progression** | 12 dungeon zones (10 encounters each: 9 mobs + 1 boss), gated by monthly vesting |
+| **Loot & equipment** | 5 rarity tiers, 4 gear slots, pity counter (15 threshold), boss-specific loot |
+| **Spells** | 7 spells with mana system, cooldowns, auto-cast, and manual casting |
+| **Pets** | 5 pets with passive bonuses, XP leveling, and evolution stages |
+| **Mercenaries** | 6 recruitable mercs with party slots (max 2), combat contributions |
+| **Prestige** | Monthly deposit unlocks new zones, preserves zone progress |
+| **Village** | Spend combat tokens: Taverne (facts), Schmiede (upgrades), Kaserne (mercs), Akademie (videos) |
 | **Compound curve** | Recharts visualization of savings growth over time |
 | **Milestones** | €10 → €100 → €1K → €10K → €100K unlock permanent buffs |
 

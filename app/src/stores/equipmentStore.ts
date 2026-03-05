@@ -4,6 +4,7 @@ import type { GearItem, EquipSlot } from '../types/equipment'
 import type { ZoneProgress } from '../types/zone'
 import { ZONES } from '../data/zones'
 import { generateEncounterSequence } from '../engine/zones'
+import { INVENTORY_CAP } from '../constants/gameBalances'
 
 interface EquipmentStore {
   // Inventory — all collected gear
@@ -44,8 +45,18 @@ function createDefaultZoneProgress(): ZoneProgress {
 
 function initEncounterSequence(zoneId: string): string[] {
   const zone = ZONES.find((z) => z.id === zoneId)
-  if (!zone) return []
-  return generateEncounterSequence(zone)
+  if (!zone) {
+    console.error(`initEncounterSequence: zone "${zoneId}" not found in ZONES data. Falling back to zone-0.`)
+    const fallback = ZONES[0]
+    if (!fallback) return []
+    return generateEncounterSequence(fallback)
+  }
+  try {
+    return generateEncounterSequence(zone)
+  } catch (err) {
+    console.error(`initEncounterSequence: failed for zone "${zoneId}": ${err instanceof Error ? err.message : err}. Check zone data has a boss enemy.`)
+    return []
+  }
 }
 
 export const useEquipmentStore = create<EquipmentStore>()(
@@ -63,7 +74,7 @@ export const useEquipmentStore = create<EquipmentStore>()(
 
       addToInventory: (item) =>
         set((s) => ({
-          inventory: [item, ...s.inventory].slice(0, 100), // bumped from 50 to 100
+          inventory: [item, ...s.inventory].slice(0, INVENTORY_CAP),
         })),
 
       equip: (item) =>

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { SPELLS } from '../data/spells'
 import { isSpellReady } from '../engine/spells'
+import { MAX_EQUIPPED_SPELLS } from '../constants/gameBalances'
 
 interface SpellStore {
   unlockedSpellIds: string[]
@@ -34,7 +35,7 @@ export const useSpellStore = create<SpellStore>()(
       equipSpell: (id) =>
         set((s) => {
           if (s.equippedSpellIds.includes(id)) return s
-          if (s.equippedSpellIds.length >= 3) return s // max 3 slots
+          if (s.equippedSpellIds.length >= MAX_EQUIPPED_SPELLS) return s
           if (!s.unlockedSpellIds.includes(id)) return s
           return { equippedSpellIds: [...s.equippedSpellIds, id] }
         }),

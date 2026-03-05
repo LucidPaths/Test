@@ -2,6 +2,7 @@ import { useGameStore } from '../../stores/gameStore'
 import { useSpellStore } from '../../stores/spellStore'
 import { getSpellById, SPELLS } from '../../data/spells'
 import { isSpellReady, getSpellCooldownRemaining, applySpellEffect } from '../../engine/spells'
+import { MAX_EQUIPPED_SPELLS } from '../../constants/gameBalances'
 
 interface SpellBarProps {
   dps: number
@@ -72,7 +73,7 @@ export function SpellBar({ dps, enemyHp, enemyMaxHp }: SpellBarProps) {
             >
               <span className="text-lg">{spell.emoji}</span>
               <span className="font-pixel text-[5px] text-rpg-muted mt-0.5">{spell.name}</span>
-              <span className="font-pixel text-[5px] text-blue-400">{spell.manaCost}MP</span>
+              <span className={`font-pixel text-[5px] ${canAfford ? 'text-blue-400' : 'text-red-400'}`}>{spell.manaCost}MP</span>
               {!ready && (
                 <div className="absolute inset-0 flex items-center justify-center bg-rpg-bg/70 rounded-lg">
                   <span className="font-pixel text-[8px] text-rpg-muted">
@@ -85,7 +86,7 @@ export function SpellBar({ dps, enemyHp, enemyMaxHp }: SpellBarProps) {
         })}
 
         {/* Empty slots */}
-        {Array.from({ length: 3 - equippedSpellIds.length }).map((_, i) => (
+        {Array.from({ length: MAX_EQUIPPED_SPELLS - equippedSpellIds.length }).map((_, i) => (
           <div key={`empty-${i}`} className="w-14 py-1.5 rounded-lg border border-rpg-border/30 bg-rpg-bg/20 flex items-center justify-center">
             <span className="font-pixel text-[7px] text-rpg-muted">—</span>
           </div>

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Transaction, FinancialProduct } from '../types/savings'
 import { DEFAULT_PRODUCTS } from '../data/products'
+import { AGE_MIN, AGE_MAX, MONTHLY_CONTRIBUTION_MIN, MONTHLY_CONTRIBUTION_MAX, MAX_TRANSACTION_HISTORY } from '../constants/gameBalances'
 
 interface SavingsStore {
   // User profile
@@ -55,7 +56,7 @@ export const useSavingsStore = create<SavingsStore>()(
       simulatedMonths: 0,
       lastSimTick: Date.now(),
 
-      setAge: (age) => set({ age: Math.max(14, Math.min(65, age)) }),
+      setAge: (age) => set({ age: Math.max(AGE_MIN, Math.min(AGE_MAX, age)) }),
       startGame: () => set({ started: true }),
 
       microSave: (amount, label, icon) =>
@@ -69,12 +70,12 @@ export const useSavingsStore = create<SavingsStore>()(
               icon,
               timestamp: Date.now(),
             },
-            ...state.transactions.slice(0, 49),
+            ...state.transactions.slice(0, MAX_TRANSACTION_HISTORY - 1),
           ],
         })),
 
       setMonthlyContribution: (amount) =>
-        set({ monthlyContribution: Math.max(25, Math.min(1000, amount)) }),
+        set({ monthlyContribution: Math.max(MONTHLY_CONTRIBUTION_MIN, Math.min(MONTHLY_CONTRIBUTION_MAX, amount)) }),
 
       toggleProduct: (productId) =>
         set((state) => ({

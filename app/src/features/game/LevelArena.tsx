@@ -12,8 +12,10 @@ import { getEncounterEnemy } from '../../engine/zones'
 import { isSpellReady, applySpellEffect } from '../../engine/spells'
 import { getPartyBonuses, rollMercDamage } from '../../engine/mercenaries'
 import { getPetBonusValue } from '../../engine/pets'
-import { RARITY_CONFIG } from '../../types/equipment'
+import { applyTraitModifiers, getEffectiveCritChance, getRegenAmount } from '../../engine/combat'
+import { RARITY_CONFIG, type Rarity } from '../../types/equipment'
 import { TRAIT_ICONS } from '../../types/zone'
+import { ATTACK_INTERVAL_MS } from '../../constants/gameBalances'
 import { ZONES, getZoneById } from '../../data/zones'
 import { getSpellById } from '../../data/spells'
 import { getPetById } from '../../data/pets'
@@ -40,7 +42,7 @@ export function LevelArena() {
   const equippedPetId = usePetStore((s) => s.equippedPetId)
   const petStates = usePetStore((s) => s.petStates)
 
-  const [lastDrop, setLastDrop] = useState<{ name: string; rarity: string; emoji: string } | null>(null)
+  const [lastDrop, setLastDrop] = useState<{ name: string; rarity: Rarity; emoji: string } | null>(null)
   const [bossIntro, setBossIntro] = useState(false)
 
   const zone = getZoneById(currentZoneId) ?? ZONES[0]
@@ -87,7 +89,7 @@ export function LevelArena() {
   const [, forceUpdate] = useForceUpdate()
 
   useEffect(() => {
-    const attackInterval = 1000
+    const attackInterval = ATTACK_INTERVAL_MS
 
     function tick() {
       const now = performance.now()
@@ -144,24 +146,15 @@ export function LevelArena() {
 
         useGameStore.getState().cleanExpiredBuffs()
 
-        // --- Trait: cursed ---
-        let effectiveCrit = curCrit
-        if (curEnemy.traits.includes('cursed')) effectiveCrit *= 0.5
-
-        // --- Player attack ---
+        // --- Trait-modified crit + player attack ---
+        const effectiveCrit = getEffectiveCritChance(curCrit, curEnemy.traits)
         const isCrit = Math.random() < effectiveCrit
-        let dmg = isCrit ? Math.floor(curDps * 2) : curDps
+        const rawDmg = isCrit ? Math.floor(curDps * 2) : curDps
 
-        // Trait: armored
-        if (curEnemy.traits.includes('armored')) dmg = Math.floor(dmg * 0.5)
-        // Trait: swift (dodge)
-        if (curEnemy.traits.includes('swift') && Math.random() < 0.3) dmg = 0
-        // Trait: shielded
-        if (curEnemy.shieldHitsRemaining > 0) {
-          dmg = 0
-          useGameStore.setState((s) => ({
-            enemy: { ...s.enemy, shieldHitsRemaining: s.enemy.shieldHitsRemaining - 1 },
-          }))
+        const traitResult = applyTraitModifiers(rawDmg, curEnemy.traits, curEnemy.shieldHitsRemaining)
+        let dmg = traitResult.finalDamage
+        if (traitResult.shieldConsumed) {
+          useGameStore.getState().decrementShield()
         }
 
         // --- Mercenary damage ---
@@ -180,11 +173,9 @@ export function LevelArena() {
           setTimeout(() => { shakeRef.current = false; forceUpdate() }, 300)
 
           // Trait: regenerating
-          if (!died && curEnemy.traits.includes('regenerating')) {
-            const healAmt = Math.floor(curEnemy.maxHp * 0.02)
-            useGameStore.setState((s) => ({
-              enemy: { ...s.enemy, hp: Math.min(s.enemy.maxHp, s.enemy.hp + healAmt) },
-            }))
+          if (!died) {
+            const healAmt = getRegenAmount(curEnemy.maxHp, curEnemy.traits)
+            if (healAmt > 0) useGameStore.getState().healEnemy(healAmt)
           }
 
           if (died) {
@@ -391,9 +382,9 @@ export function LevelArena() {
             transition={{ duration: 0.4, type: 'spring' }}
             className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg border font-pixel text-[7px] whitespace-nowrap backdrop-blur-sm"
             style={{
-              borderColor: RARITY_CONFIG[lastDrop.rarity as keyof typeof RARITY_CONFIG]?.color,
-              color: RARITY_CONFIG[lastDrop.rarity as keyof typeof RARITY_CONFIG]?.color,
-              backgroundColor: `${RARITY_CONFIG[lastDrop.rarity as keyof typeof RARITY_CONFIG]?.color}20`,
+              borderColor: RARITY_CONFIG[lastDrop.rarity]?.color,
+              color: RARITY_CONFIG[lastDrop.rarity]?.color,
+              backgroundColor: `${RARITY_CONFIG[lastDrop.rarity]?.color}20`,
             }}
           >
             {lastDrop.emoji} {lastDrop.name}!

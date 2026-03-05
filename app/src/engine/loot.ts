@@ -10,7 +10,7 @@ const DROP_RATES: { rarity: Rarity; weight: number }[] = [
 ]
 
 // Pity: guaranteed rare+ after this many common/uncommon drops in a row
-const PITY_THRESHOLD = 15
+export const PITY_THRESHOLD = 15
 
 // Item name pools per slot — German financial theme
 const ITEM_NAMES: Record<EquipSlot, { name: string; emoji: string }[]> = {
@@ -110,8 +110,6 @@ export function rollLootDrop(enemyLevel: number, pityCounter: number): { item: G
     newPity,
   }
 }
-
-export { PITY_THRESHOLD }
 
 /**
  * Roll boss loot — guaranteed drop from the boss loot table.
