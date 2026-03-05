@@ -23,6 +23,7 @@ function App() {
   const products = useSavingsStore((s) => s.products)
   const age = useSavingsStore((s) => s.age)
   const simulatedMonths = useSavingsStore((s) => s.simulatedMonths)
+  const resetGame = useSavingsStore((s) => s.resetGame)
   const level = useCharacterStore((s) => s.level)
   const recalculate = useCharacterStore((s) => s.recalculate)
   const spawnEnemy = useGameStore((s) => s.spawnEnemy)
@@ -56,6 +57,12 @@ function App() {
         <div className="flex items-center gap-2">
           <span className="font-pixel text-[7px] text-rpg-muted">Alter {currentSimAge}</span>
           <span className="font-pixel text-[8px] text-gold">Lv.{level}</span>
+          <button
+            onClick={() => { resetGame(); recalculate(0, []) }}
+            className="font-pixel text-[7px] text-rpg-accent border border-rpg-accent/30 rounded px-1.5 py-0.5 cursor-pointer hover:bg-rpg-accent/20 transition-colors"
+          >
+            RESET
+          </button>
         </div>
       </header>
 
