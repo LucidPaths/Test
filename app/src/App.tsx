@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { GameView } from './features/game/GameView'
 import { EducationView } from './features/education/EducationView'
 import { PortfolioView } from './features/portfolio/PortfolioView'
+import { OnboardingView } from './features/onboarding/OnboardingView'
 import { CurrencyDisplay } from './components/CurrencyDisplay'
 import { useSavingsStore } from './stores/savingsStore'
 import { useCharacterStore } from './stores/characterStore'
@@ -17,13 +18,16 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('game')
+  const started = useSavingsStore((s) => s.started)
   const balance = useSavingsStore((s) => s.balance)
   const products = useSavingsStore((s) => s.products)
   const age = useSavingsStore((s) => s.age)
   const simulatedMonths = useSavingsStore((s) => s.simulatedMonths)
+  const resetGame = useSavingsStore((s) => s.resetGame)
   const level = useCharacterStore((s) => s.level)
   const recalculate = useCharacterStore((s) => s.recalculate)
   const spawnEnemy = useGameStore((s) => s.spawnEnemy)
+  const resetCombat = useGameStore((s) => s.resetCombat)
 
   const currentSimAge = age + Math.floor(simulatedMonths / 12)
 
@@ -32,6 +36,15 @@ function App() {
     recalculate(balance, products)
     spawnEnemy(level || 1)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Show onboarding if the user hasn't started yet
+  if (!started) {
+    return (
+      <div className="flex flex-col h-full max-w-md mx-auto w-full">
+        <OnboardingView />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full max-w-md mx-auto w-full relative">
@@ -45,6 +58,16 @@ function App() {
         <div className="flex items-center gap-2">
           <span className="font-pixel text-[7px] text-rpg-muted">Alter {currentSimAge}</span>
           <span className="font-pixel text-[8px] text-gold">Lv.{level}</span>
+          <button
+            onClick={() => {
+              resetGame()
+              recalculate(0, [])
+              resetCombat()
+            }}
+            className="font-pixel text-[7px] text-rpg-accent border border-rpg-accent/30 rounded px-1.5 py-0.5 cursor-pointer hover:bg-rpg-accent/20 transition-colors"
+          >
+            RESET
+          </button>
         </div>
       </header>
 

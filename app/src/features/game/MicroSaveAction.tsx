@@ -20,16 +20,15 @@ const ACTIONS: SaveAction[] = [
 
 export function MicroSaveAction() {
   const microSave = useSavingsStore((s) => s.microSave)
-  const products = useSavingsStore((s) => s.products)
-  const balance = useSavingsStore((s) => s.balance)
   const recalculate = useCharacterStore((s) => s.recalculate)
   const [popups, setPopups] = useState<{ id: string; amount: number; x: number }[]>([])
   const [collapsed, setCollapsed] = useState(true)
 
   function handleSave(action: SaveAction, idx: number) {
     microSave(action.amount, action.label, action.icon)
-    const newBalance = balance + action.amount
-    recalculate(newBalance, products)
+    // Read fresh state after microSave to avoid race with simulation tick
+    const { balance: freshBalance, products: freshProducts } = useSavingsStore.getState()
+    recalculate(freshBalance, freshProducts)
 
     const id = `pop-${Date.now()}-${idx}`
     setPopups((p) => [...p, { id, amount: action.amount, x: idx * 25 }])

@@ -13,8 +13,8 @@ export const DEFAULT_PRODUCTS: FinancialProduct[] = [
     riskLevel: 1,
     annualRate: 0.025, // VR Bank Sparplan ~2.5%
     buffName: 'Disziplin-Aura',
-    buffDescription: '+15% XP-Gewinn',
-    buffStat: 'xpMultiplier',
+    buffDescription: '+15% Angriff',
+    buffStat: 'attack',
     buffValue: 0.15,
     active: false,
   },

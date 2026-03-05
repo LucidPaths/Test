@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
   ResponsiveContainer, ReferenceLine, ReferenceDot,
 } from 'recharts'
-import { useSavingsStore } from '../../stores/savingsStore'
+import { useSavingsStore, getBlendedRate } from '../../stores/savingsStore'
 import { projectBalance, monthsToTarget } from '../../engine/compound'
 
 export function CompoundCurve() {
@@ -16,21 +16,15 @@ export function CompoundCurve() {
   const products = useSavingsStore((s) => s.products)
   const [expanded, setExpanded] = useState(true)
 
-  // Blended annual rate from active products, default German baseline
-  const annualRate = useMemo(() => {
-    const active = products.filter((p) => p.active)
-    if (active.length === 0) return 0.02 // Tagesgeld baseline
-    return active.reduce((sum, p) => sum + p.annualRate, 0) / active.length
-  }, [products])
+  // Single source of truth for rate — shared with savingsStore simulation
+  const annualRate = useMemo(() => getBlendedRate(products), [products])
 
-  // Calculate months to 100K — this determines the graph X-axis
-  const mToTarget = monthsToTarget(balance, monthlyContribution, annualRate, 100_000)
-
-  // Project the curve exactly to 100K (+ a small buffer)
+  // Project the FULL journey from 0 to 100K so sliders have visible effect
+  const mToTarget = monthsToTarget(0, monthlyContribution, annualRate, 100_000)
   const totalMonths = Math.min(600, mToTarget + 12) // cap at 50 years
   const data = useMemo(
-    () => projectBalance(balance, monthlyContribution, annualRate, totalMonths),
-    [balance, monthlyContribution, annualRate, totalMonths]
+    () => projectBalance(0, monthlyContribution, annualRate, totalMonths),
+    [monthlyContribution, annualRate, totalMonths]
   )
 
   // Dynamic Y-axis: always start from 0, scale to show the full curve + 100K target
