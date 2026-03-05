@@ -1,30 +1,62 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { GearItem, EquipSlot } from '../types/equipment'
+import type { ZoneProgress } from '../types/zone'
+import { ZONES } from '../data/zones'
+import { generateEncounterSequence } from '../engine/zones'
+import { INVENTORY_CAP } from '../constants/gameBalances'
 
 interface EquipmentStore {
   // Inventory — all collected gear
   inventory: GearItem[]
   // Equipped gear — one per slot
   equipped: Partial<Record<EquipSlot, GearItem>>
-  // Combat stage — advances when enemies are killed
+  // Combat stage — legacy total, kept for stats display
   stage: number
   // Pity counter — counts consecutive common/uncommon drops
   pityCounter: number
-  // Highest stage reached (for prestige tracking)
+  // Highest stage reached (lifetime stat)
   highestStage: number
+
+  // ── Zone system ──
+  currentZoneId: string
+  encounter: number                    // 1-10 within current zone
+  zoneProgress: Record<string, ZoneProgress>
+  encounterSequence: string[]          // Transient: shuffled enemy IDs for current run
 
   // Actions
   addToInventory: (item: GearItem) => void
   equip: (item: GearItem) => void
   unequip: (slot: EquipSlot) => void
-  advanceStage: () => void
+  advanceEncounter: () => void
   setPityCounter: (n: number) => void
-  // Upgrade item rarity + stats in place
   upgradeItem: (itemId: string, newRarity: GearItem['rarity'], statMultiplier: number) => void
-  // Prestige: reset stage but keep legendary gear
+  selectZone: (zoneId: string) => void
+  markZoneEncounterDefeated: () => void
+  markZoneCleared: () => void
+  // Prestige: reset encounter but keep zone progress
   prestigeReset: () => void
   fullReset: () => void
+}
+
+function createDefaultZoneProgress(): ZoneProgress {
+  return { cleared: false, encountersDefeated: 0, bestRun: 0, timesCleared: 0, bossDefeated: false }
+}
+
+function initEncounterSequence(zoneId: string): string[] {
+  const zone = ZONES.find((z) => z.id === zoneId)
+  if (!zone) {
+    console.error(`initEncounterSequence: zone "${zoneId}" not found in ZONES data. Falling back to zone-0.`)
+    const fallback = ZONES[0]
+    if (!fallback) return []
+    return generateEncounterSequence(fallback)
+  }
+  try {
+    return generateEncounterSequence(zone)
+  } catch (err) {
+    console.error(`initEncounterSequence: failed for zone "${zoneId}": ${err instanceof Error ? err.message : err}. Check zone data has a boss enemy.`)
+    return []
+  }
 }
 
 export const useEquipmentStore = create<EquipmentStore>()(
@@ -35,10 +67,14 @@ export const useEquipmentStore = create<EquipmentStore>()(
       stage: 1,
       pityCounter: 0,
       highestStage: 1,
+      currentZoneId: 'zone-0',
+      encounter: 1,
+      zoneProgress: { 'zone-0': createDefaultZoneProgress() },
+      encounterSequence: initEncounterSequence('zone-0'),
 
       addToInventory: (item) =>
         set((s) => ({
-          inventory: [item, ...s.inventory].slice(0, 50), // cap at 50 items
+          inventory: [item, ...s.inventory].slice(0, INVENTORY_CAP),
         })),
 
       equip: (item) =>
@@ -53,12 +89,14 @@ export const useEquipmentStore = create<EquipmentStore>()(
           return { equipped: next }
         }),
 
-      advanceStage: () =>
+      advanceEncounter: () =>
         set((s) => {
-          const next = s.stage + 1
+          const next = s.encounter + 1
+          const totalStage = s.stage + 1
           return {
-            stage: next,
-            highestStage: Math.max(s.highestStage, next),
+            encounter: next,
+            stage: totalStage,
+            highestStage: Math.max(s.highestStage, totalStage),
           }
         }),
 
@@ -84,15 +122,64 @@ export const useEquipmentStore = create<EquipmentStore>()(
           return { inventory: newInventory, equipped: newEquipped }
         }),
 
-      // Monthly prestige: reset stage to 1, clear non-legendary inventory
+      selectZone: (zoneId) => {
+        const state = get()
+        const progress = state.zoneProgress[zoneId] ?? createDefaultZoneProgress()
+        const sequence = initEncounterSequence(zoneId)
+        set({
+          currentZoneId: zoneId,
+          encounter: 1,
+          encounterSequence: sequence,
+          zoneProgress: { ...state.zoneProgress, [zoneId]: { ...progress, encountersDefeated: 0 } },
+        })
+      },
+
+      markZoneEncounterDefeated: () =>
+        set((s) => {
+          const zoneId = s.currentZoneId
+          const prev = s.zoneProgress[zoneId] ?? createDefaultZoneProgress()
+          const defeated = prev.encountersDefeated + 1
+          return {
+            zoneProgress: {
+              ...s.zoneProgress,
+              [zoneId]: {
+                ...prev,
+                encountersDefeated: defeated,
+                bestRun: Math.max(prev.bestRun, defeated),
+              },
+            },
+          }
+        }),
+
+      markZoneCleared: () =>
+        set((s) => {
+          const zoneId = s.currentZoneId
+          const prev = s.zoneProgress[zoneId] ?? createDefaultZoneProgress()
+          return {
+            zoneProgress: {
+              ...s.zoneProgress,
+              [zoneId]: {
+                ...prev,
+                cleared: true,
+                bossDefeated: true,
+                timesCleared: prev.timesCleared + 1,
+                encountersDefeated: 10,
+                bestRun: 10,
+              },
+            },
+          }
+        }),
+
+      // Prestige: reset encounter in current zone, keep zone progress, clear non-legendary gear
       prestigeReset: () => {
         const state = get()
         const legendaryGear = state.inventory.filter((i) => i.rarity === 'legendary')
+        const sequence = initEncounterSequence(state.currentZoneId)
         set({
-          stage: 1,
+          encounter: 1,
           pityCounter: 0,
           inventory: legendaryGear,
-          // Keep equipped items
+          encounterSequence: sequence,
         })
       },
 
@@ -103,9 +190,26 @@ export const useEquipmentStore = create<EquipmentStore>()(
           stage: 1,
           pityCounter: 0,
           highestStage: 1,
+          currentZoneId: 'zone-0',
+          encounter: 1,
+          zoneProgress: { 'zone-0': createDefaultZoneProgress() },
+          encounterSequence: initEncounterSequence('zone-0'),
         }),
     }),
-    { name: '100k-equipment-v1' }
+    {
+      name: '100k-equipment-v2',
+      partialize: (state) => ({
+        inventory: state.inventory,
+        equipped: state.equipped,
+        stage: state.stage,
+        pityCounter: state.pityCounter,
+        highestStage: state.highestStage,
+        currentZoneId: state.currentZoneId,
+        encounter: state.encounter,
+        zoneProgress: state.zoneProgress,
+        // encounterSequence is transient — NOT persisted
+      }),
+    }
   )
 )
 

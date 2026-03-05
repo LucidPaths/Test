@@ -10,7 +10,7 @@ const DROP_RATES: { rarity: Rarity; weight: number }[] = [
 ]
 
 // Pity: guaranteed rare+ after this many common/uncommon drops in a row
-const PITY_THRESHOLD = 15
+export const PITY_THRESHOLD = 15
 
 // Item name pools per slot — German financial theme
 const ITEM_NAMES: Record<EquipSlot, { name: string; emoji: string }[]> = {
@@ -111,4 +111,63 @@ export function rollLootDrop(enemyLevel: number, pityCounter: number): { item: G
   }
 }
 
-export { PITY_THRESHOLD }
+/**
+ * Roll boss loot — guaranteed drop from the boss loot table.
+ * Boss loot is always rare+ and uses the boss-specific item definitions.
+ */
+export function rollBossLoot(
+  bossLootTable: import('../types/zone').BossLootEntry[],
+  zoneIndex: number,
+): { item: GearItem; newPity: number } | null {
+  if (bossLootTable.length === 0) return null
+
+  const entry = bossLootTable[Math.floor(Math.random() * bossLootTable.length)]
+  const rarity = entry.guaranteedRarity
+  const scale = { common: 1, uncommon: 2, rare: 4, epic: 8, legendary: 16 }[rarity]
+  const base = 2 + zoneIndex * 2
+
+  // Stats based on profile
+  const stats = {
+    attack: 0,
+    defense: 0,
+    critChance: 0,
+    goldFind: 0,
+  }
+
+  switch (entry.statProfile) {
+    case 'attack':
+      stats.attack = Math.floor(base * scale * 1.2)
+      stats.critChance = Math.round(scale * 0.005 * 1000) / 1000
+      break
+    case 'defense':
+      stats.defense = Math.floor(base * scale * 1.1)
+      stats.attack = Math.floor(base * scale * 0.3)
+      break
+    case 'crit':
+      stats.critChance = Math.round(scale * 0.008 * 1000) / 1000
+      stats.attack = Math.floor(base * scale * 0.5)
+      break
+    case 'goldFind':
+      stats.goldFind = Math.round(scale * 0.05 * 100) / 100
+      stats.attack = Math.floor(base * scale * 0.4)
+      break
+    case 'balanced':
+      stats.attack = Math.floor(base * scale * 0.7)
+      stats.defense = Math.floor(base * scale * 0.5)
+      stats.critChance = Math.round(scale * 0.003 * 1000) / 1000
+      stats.goldFind = Math.round(scale * 0.02 * 100) / 100
+      break
+  }
+
+  return {
+    item: {
+      id: `boss-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: entry.itemNameOverride,
+      emoji: entry.emoji,
+      slot: entry.slot,
+      rarity,
+      ...stats,
+    },
+    newPity: 0, // Boss loot resets pity
+  }
+}

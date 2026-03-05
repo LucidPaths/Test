@@ -4,47 +4,79 @@ import { useSavingsStore } from '../../stores/savingsStore'
 import { useCharacterStore } from '../../stores/characterStore'
 import { useEquipmentStore } from '../../stores/equipmentStore'
 import { useGameStore } from '../../stores/gameStore'
+import { useSpellStore } from '../../stores/spellStore'
+import { usePetStore } from '../../stores/petStore'
+import { ZONES } from '../../data/zones'
+import { isZoneUnlocked, getEncounterEnemy } from '../../engine/zones'
 
 /**
- * MVP dev tool: simulates a monthly vesting arriving.
- * This is the PRESTIGE EVENT:
+ * Prestige event: simulates a monthly vesting arriving.
  * 1. Balance grows (monthly contribution + interest)
  * 2. Character level recalculates from new balance
- * 3. Combat stage resets to 1 (prestige reset)
+ * 3. Combat encounter resets to 1 in current zone (prestige reset)
  * 4. Non-legendary gear is cleared (legendary persists)
- * 5. New enemy spawns at stage 1
- * 6. Player replays early content at higher power = dopamine rush
+ * 5. Check for new zone unlocks + spell/pet/merc unlocks from cleared zones
+ * 6. New enemy spawns at encounter 1
  */
 export function SkipMonthButton() {
   const simulateTick = useSavingsStore((s) => s.simulateTick)
   const monthlyContribution = useSavingsStore((s) => s.monthlyContribution)
   const simulatedMonths = useSavingsStore((s) => s.simulatedMonths)
   const recalculate = useCharacterStore((s) => s.recalculate)
-  const level = useCharacterStore((s) => s.level)
   const prestigeReset = useEquipmentStore((s) => s.prestigeReset)
   const highestStage = useEquipmentStore((s) => s.highestStage)
   const spawnEnemy = useGameStore((s) => s.spawnEnemy)
 
   const [prestigeLevel, setPrestigeLevel] = useState<number | null>(null)
+  const [newZone, setNewZone] = useState<string | null>(null)
 
   const handlePrestige = () => {
+    const prevMonths = useSavingsStore.getState().simulatedMonths
+
     // 1. Add monthly vesting to balance
     simulateTick()
-    const { balance, products } = useSavingsStore.getState()
+    const { balance, products, simulatedMonths: newMonths } = useSavingsStore.getState()
 
     // 2. Recalculate character from new balance
     recalculate(balance, products)
     const newLevel = useCharacterStore.getState().level
 
-    // 3. Prestige: reset combat stage, keep legendary gear
+    // 3. Check for new zone unlocks
+    const newlyUnlockedZones = ZONES.filter(
+      (z) => !isZoneUnlocked(z.id, prevMonths) && isZoneUnlocked(z.id, newMonths)
+    )
+
+    // 4. Unlock spells/pets from previously cleared zones
+    const { zoneProgress } = useEquipmentStore.getState()
+    for (const zone of ZONES) {
+      if (!isZoneUnlocked(zone.id, newMonths)) continue
+      const progress = zoneProgress[zone.id]
+      if (!progress?.cleared) continue
+      if (zone.spellUnlock) useSpellStore.getState().unlockSpell(zone.spellUnlock)
+      if (zone.petUnlock) usePetStore.getState().unlockPet(zone.petUnlock)
+    }
+
+    // 5. Prestige: reset encounter, keep zone progress, clear non-legendary gear
     prestigeReset()
 
-    // 4. Spawn fresh enemy at stage 1
-    spawnEnemy(1)
+    // 6. Spawn fresh enemy at encounter 1 in current zone
+    const eqState = useEquipmentStore.getState()
+    const zone = ZONES.find((z) => z.id === eqState.currentZoneId)
+    if (zone) {
+      const enemy = getEncounterEnemy(zone, eqState.encounterSequence, 1)
+      const charLvl = useCharacterStore.getState().level
+      spawnEnemy(zone, enemy, charLvl)
+    }
 
-    // 5. Show prestige celebration with the new level
+    // 7. Show celebration
     setPrestigeLevel(newLevel)
-    setTimeout(() => setPrestigeLevel(null), 3000)
+    if (newlyUnlockedZones.length > 0) {
+      setNewZone(newlyUnlockedZones[0].name)
+    }
+    setTimeout(() => {
+      setPrestigeLevel(null)
+      setNewZone(null)
+    }, 3000)
   }
 
   return (
@@ -75,14 +107,21 @@ export function SkipMonthButton() {
                 transition={{ duration: 0.6 }}
                 className="text-4xl mb-2"
               >
-                ✨
+                {newZone ? '🗺️' : '✨'}
               </motion.div>
-              <div className="font-pixel text-[10px] text-gold">AUFSTIEG!</div>
+              <div className="font-pixel text-[10px] text-gold">
+                {newZone ? 'NEUE ZONE!' : 'AUFSTIEG!'}
+              </div>
+              {newZone && (
+                <div className="font-pixel text-[8px] text-green-400 mt-1">
+                  {newZone} freigeschaltet!
+                </div>
+              )}
               <div className="font-pixel text-[7px] text-rpg-muted mt-1">
                 +€{monthlyContribution} investiert
               </div>
               <div className="font-pixel text-[7px] text-rpg-accent mt-0.5">
-                Lv.{prestigeLevel} — Stufe zurückgesetzt
+                Lv.{prestigeLevel} — Begegnung zurückgesetzt
               </div>
             </div>
           </motion.div>

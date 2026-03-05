@@ -1,7 +1,12 @@
 import { useCharacterStore } from '../../stores/characterStore'
 import { useSavingsStore } from '../../stores/savingsStore'
 import { useEquipmentStore, getGearBonuses } from '../../stores/equipmentStore'
+import { usePetStore } from '../../stores/petStore'
+import { useMercenaryStore } from '../../stores/mercenaryStore'
 import { getDPS, getCritChance, getDefense } from '../../engine/progression'
+import { getPartyBonuses, getTotalPartyDPS } from '../../engine/mercenaries'
+import { getPetById } from '../../data/pets'
+import { getPetBonusValue, getPetDisplayName, getPetDisplayEmoji } from '../../engine/pets'
 import { HealthBar } from '../../components/HealthBar'
 import { StatBadge } from '../../components/StatBadge'
 
@@ -10,11 +15,19 @@ export function CharacterPanel() {
   const simulatedMonths = useSavingsStore((s) => s.simulatedMonths)
   const equipped = useEquipmentStore((s) => s.equipped)
   const stage = useEquipmentStore((s) => s.stage)
+  const equippedPetId = usePetStore((s) => s.equippedPetId)
+  const petStates = usePetStore((s) => s.petStates)
+  const partySlots = useMercenaryStore((s) => s.partySlots)
 
   const gear = getGearBonuses(equipped)
   const dps = getDPS(char, gear.attack)
   const crit = getCritChance(char, gear.critChance)
   const def = getDefense(char)
+  const partyBonuses = getPartyBonuses(partySlots)
+  const totalDPS = getTotalPartyDPS(dps, partyBonuses)
+
+  const equippedPet = equippedPetId ? getPetById(equippedPetId) : null
+  const equippedPetState = equippedPetId ? petStates[equippedPetId] : null
 
   const simYears = Math.floor(simulatedMonths / 12)
   const simMonths = simulatedMonths % 12
@@ -50,7 +63,25 @@ export function CharacterPanel() {
         <StatBadge label="ATK" value={dps} icon="⚔️" />
         <StatBadge label="DEF" value={def} icon="🛡️" />
         <StatBadge label="KRIT" value={`${Math.round(crit * 100)}%`} icon="💥" />
+        {partyBonuses.totalMercDPS > 0 && (
+          <StatBadge label="PARTY" value={totalDPS} icon="👥" />
+        )}
       </div>
+
+      {/* Pet info */}
+      {equippedPet && equippedPetState && (
+        <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-rpg-border/30">
+          <span className="text-lg">{getPetDisplayEmoji(equippedPet, equippedPetState)}</span>
+          <span className="font-pixel text-[6px] text-rpg-muted">
+            {getPetDisplayName(equippedPet, equippedPetState)} Lv.{equippedPetState.level}
+          </span>
+          <span className="font-pixel text-[6px] text-green-400">
+            +{equippedPet.passiveBonus.isMultiplier
+              ? `${Math.round(getPetBonusValue(equippedPet, equippedPetState) * 100)}%`
+              : getPetBonusValue(equippedPet, equippedPetState)} {equippedPet.passiveBonus.stat}
+          </span>
+        </div>
+      )}
 
       {char.buffs.length > 0 && (
         <div className="flex gap-1 mt-2 flex-wrap">

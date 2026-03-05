@@ -3,8 +3,9 @@ import { motion } from 'framer-motion'
 import { Taverne } from './Taverne'
 import { Schmiede } from './Schmiede'
 import { Akademie } from './Akademie'
+import { Kaserne } from './Kaserne'
 
-type Building = 'taverne' | 'schmiede' | 'akademie' | null
+type Building = 'taverne' | 'schmiede' | 'akademie' | 'kaserne' | null
 
 interface BuildingDef {
   id: Building & string
@@ -18,6 +19,7 @@ const BUILDINGS: BuildingDef[] = [
   { id: 'taverne', name: 'Taverne', emoji: '🍺', description: 'Finanzwissen vom Wirt', unlocked: true },
   { id: 'schmiede', name: 'Schmiede', emoji: '⚒️', description: 'Ausrüstung verbessern', unlocked: true },
   { id: 'akademie', name: 'Akademie', emoji: '📚', description: 'Video-Lektionen', unlocked: true },
+  { id: 'kaserne', name: 'Kaserne', emoji: '🏰', description: 'Söldner rekrutieren', unlocked: true },
 ]
 
 export function VillageView() {
@@ -26,6 +28,7 @@ export function VillageView() {
   if (activeBuilding === 'taverne') return <Taverne onBack={() => setActiveBuilding(null)} />
   if (activeBuilding === 'schmiede') return <Schmiede onBack={() => setActiveBuilding(null)} />
   if (activeBuilding === 'akademie') return <Akademie onBack={() => setActiveBuilding(null)} />
+  if (activeBuilding === 'kaserne') return <Kaserne onBack={() => setActiveBuilding(null)} />
 
   return (
     <div className="flex flex-col gap-3 p-3">
