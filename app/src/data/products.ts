@@ -1,0 +1,43 @@
+import type { FinancialProduct } from '../types/savings'
+
+export const DEFAULT_PRODUCTS: FinancialProduct[] = [
+  {
+    id: 'sparplan-50',
+    name: 'VR-Sparplan',
+    type: 'sparplan',
+    description: 'Monatlicher Sparplan ab 50€. Regelmäßiges Sparen bringt stetige Fortschritte.',
+    riskLevel: 1,
+    annualRate: 0.02,
+    buffName: 'Disziplin-Aura',
+    buffDescription: '+15% XP-Gewinn durch regelmäßiges Sparen',
+    buffStat: 'xpMultiplier',
+    buffValue: 0.15,
+    active: false,
+  },
+  {
+    id: 'etf-world',
+    name: 'VR-ETF Portfolio',
+    type: 'etf',
+    description: 'Breit gestreuter Welt-ETF. Diversifikation ist dein Schutzschild.',
+    riskLevel: 3,
+    annualRate: 0.06,
+    buffName: 'Element-Resistenz',
+    buffDescription: '+10% Verteidigung durch Diversifikation',
+    buffStat: 'defense',
+    buffValue: 0.10,
+    active: false,
+  },
+  {
+    id: 'bausparer',
+    name: 'VR-Bausparer',
+    type: 'bausparer',
+    description: 'Langfristiger Bausparvertrag. Dein Fundament für die Zukunft.',
+    riskLevel: 1,
+    annualRate: 0.015,
+    buffName: 'Festungs-Buff',
+    buffDescription: '+20% Basis-Verteidigung durch langfristiges Engagement',
+    buffStat: 'defense',
+    buffValue: 0.20,
+    active: false,
+  },
+]
