@@ -43,11 +43,11 @@ export function getXPProgress(balance: number): number {
   return Math.min(1, (balance - currentThreshold) / range)
 }
 
-export function getEnemyHP(level: number): number {
-  return Math.floor(20 * Math.pow(1.12, level))
+export function getEnemyHP(stage: number): number {
+  return Math.floor(20 * Math.pow(1.12, stage))
 }
 
-export function getEnemyName(level: number): { name: string; emoji: string } {
+export function getEnemyName(stage: number): { name: string; emoji: string } {
   const enemies = [
     { name: 'Schulden-Slime', emoji: '🟢' },
     { name: 'Kontogebühr-Kobold', emoji: '👺' },
@@ -60,20 +60,17 @@ export function getEnemyName(level: number): { name: string; emoji: string } {
     { name: 'Deflations-Drache', emoji: '🔥' },
     { name: 'Schulden-Souverän', emoji: '👑' },
   ]
-  const tier = Math.min(Math.floor(level / 10), enemies.length - 1)
+  const tier = Math.min(Math.floor(stage / 10), enemies.length - 1)
   return enemies[tier]
 }
 
 /**
- * DPS derives from savings velocity (monthly contribution) + character level + buffs.
- * Higher monthly savings = stronger character = faster combat.
- * Micro-saves give temporary burst but aren't required.
+ * DPS derives from character level + buffs + equipped gear.
+ * Level only changes when monthly vesting hits (real money).
+ * Gear comes from combat loot drops.
  */
-export function getDPS(character: Character, monthlyContribution: number): number {
-  // Base DPS from savings velocity: €100/month = ~10 DPS baseline
-  const velocityDPS = Math.floor(monthlyContribution / 10)
-  const levelDPS = character.baseAttack
-  let baseDPS = velocityDPS + levelDPS
+export function getDPS(character: Character, gearAttack: number = 0): number {
+  const baseDPS = character.baseAttack + gearAttack
 
   let multiplier = 1
   for (const buff of character.buffs) {
@@ -84,8 +81,8 @@ export function getDPS(character: Character, monthlyContribution: number): numbe
   return Math.max(1, Math.floor(baseDPS * multiplier))
 }
 
-export function getCritChance(character: Character): number {
-  let crit = character.baseCritChance
+export function getCritChance(character: Character, gearCrit: number = 0): number {
+  let crit = character.baseCritChance + gearCrit
   for (const buff of character.buffs) {
     if (buff.stat === 'critChance') crit += buff.value
     if (buff.stat === 'allStats') crit += buff.value * 0.1

@@ -2,21 +2,36 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useGameStore } from '../../stores/gameStore'
 import { useCharacterStore } from '../../stores/characterStore'
-import { useSavingsStore } from '../../stores/savingsStore'
+import { useEquipmentStore, getGearBonuses } from '../../stores/equipmentStore'
 import { getDPS, getCritChance } from '../../engine/progression'
+import { rollLootDrop } from '../../engine/loot'
+import { RARITY_CONFIG } from '../../types/equipment'
 import { HealthBar } from '../../components/HealthBar'
 
 export function LevelArena() {
   const enemy = useGameStore((s) => s.enemy)
   const damageNumbers = useGameStore((s) => s.damageNumbers)
   const enemiesDefeated = useGameStore((s) => s.enemiesDefeated)
+  const combatTokens = useGameStore((s) => s.combatTokens)
   const dealDamage = useGameStore((s) => s.dealDamage)
   const spawnEnemy = useGameStore((s) => s.spawnEnemy)
   const addDamageNumber = useGameStore((s) => s.addDamageNumber)
   const cleanDamageNumbers = useGameStore((s) => s.cleanDamageNumbers)
 
   const char = useCharacterStore()
-  const monthlyContribution = useSavingsStore((s) => s.monthlyContribution)
+  const stage = useEquipmentStore((s) => s.stage)
+  const equipped = useEquipmentStore((s) => s.equipped)
+  const pityCounter = useEquipmentStore((s) => s.pityCounter)
+  const advanceStage = useEquipmentStore((s) => s.advanceStage)
+  const addToInventory = useEquipmentStore((s) => s.addToInventory)
+  const setPityCounter = useEquipmentStore((s) => s.setPityCounter)
+
+  const [lastDrop, setLastDrop] = useState<{ name: string; rarity: string; emoji: string } | null>(null)
+
+  const gear = getGearBonuses(equipped)
+  const dps = getDPS(char, gear.attack)
+  const critChance = getCritChance(char, gear.critChance)
+  const attackInterval = 1000
 
   const lastTickRef = useRef(performance.now())
   const accumRef = useRef(0)
@@ -24,16 +39,11 @@ export function LevelArena() {
   const shakeRef = useRef(false)
   const [, forceUpdate] = useForceUpdate()
 
-  const dps = getDPS(char, monthlyContribution)
-  const critChance = getCritChance(char)
-  const attackInterval = 1000 // 1 attack per second
-
   const tick = useCallback(() => {
     const now = performance.now()
     const delta = now - lastTickRef.current
     lastTickRef.current = now
 
-    // Combat tick
     accumRef.current += delta
     if (accumRef.current >= attackInterval) {
       accumRef.current -= attackInterval
@@ -52,13 +62,26 @@ export function LevelArena() {
       }, 300)
 
       if (died) {
-        setTimeout(() => spawnEnemy(char.level), 500)
+        // Try loot drop
+        const currentPity = useEquipmentStore.getState().pityCounter
+        const drop = rollLootDrop(stage, currentPity)
+        if (drop) {
+          addToInventory(drop.item)
+          setPityCounter(drop.newPity)
+          setLastDrop({ name: drop.item.name, rarity: drop.item.rarity, emoji: drop.item.emoji })
+          setTimeout(() => setLastDrop(null), 2000)
+        }
+
+        // Advance stage, spawn next enemy at new stage
+        advanceStage()
+        const nextStage = useEquipmentStore.getState().stage
+        setTimeout(() => spawnEnemy(nextStage), 500)
       }
     }
 
     cleanDamageNumbers()
     rafRef.current = requestAnimationFrame(tick)
-  }, [dps, critChance, char.level, dealDamage, spawnEnemy, addDamageNumber, cleanDamageNumbers, forceUpdate])
+  }, [dps, critChance, stage, dealDamage, spawnEnemy, addDamageNumber, cleanDamageNumbers, forceUpdate, advanceStage, addToInventory, setPityCounter])
 
   useEffect(() => {
     rafRef.current = requestAnimationFrame(tick)
@@ -69,10 +92,10 @@ export function LevelArena() {
     <div className="bg-rpg-panel border border-rpg-border rounded-lg p-3 relative overflow-hidden">
       <div className="flex justify-between items-center mb-2">
         <span className="font-pixel text-[9px] text-rpg-muted">
-          Level {enemy.level}
+          Stufe {stage}
         </span>
         <span className="font-pixel text-[8px] text-rpg-muted">
-          Besiegt: {enemiesDefeated}
+          Besiegt: {enemiesDefeated} | 🪙 {combatTokens}
         </span>
       </div>
 
@@ -80,13 +103,8 @@ export function LevelArena() {
         <span className="font-pixel text-[10px] text-rpg-accent">{enemy.name}</span>
 
         <div className="flex items-center gap-6">
-          {/* Character */}
           <div className="text-3xl animate-idle-bob">🧙</div>
-
-          {/* VS */}
           <div className="font-pixel text-[8px] text-rpg-muted">VS</div>
-
-          {/* Enemy */}
           <div
             className={`text-4xl transition-transform ${
               shakeRef.current ? 'animate-shake' : ''
@@ -107,9 +125,30 @@ export function LevelArena() {
         </div>
 
         <div className="font-pixel text-[8px] text-rpg-muted">
-          DPS: {dps} (€{monthlyContribution}/Monat)
+          DPS: {dps}
         </div>
       </div>
+
+      {/* Loot drop notification */}
+      <AnimatePresence>
+        {lastDrop && (
+          <motion.div
+            key="loot-drop"
+            initial={{ opacity: 0, y: 20, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg border font-pixel text-[8px] whitespace-nowrap"
+            style={{
+              borderColor: RARITY_CONFIG[lastDrop.rarity as keyof typeof RARITY_CONFIG]?.color,
+              color: RARITY_CONFIG[lastDrop.rarity as keyof typeof RARITY_CONFIG]?.color,
+              backgroundColor: `${RARITY_CONFIG[lastDrop.rarity as keyof typeof RARITY_CONFIG]?.color}15`,
+            }}
+          >
+            {lastDrop.emoji} {lastDrop.name} gefunden!
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Damage numbers */}
       <AnimatePresence>
