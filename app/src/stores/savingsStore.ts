@@ -99,6 +99,6 @@ export const useSavingsStore = create<SavingsStore>()(
           products: DEFAULT_PRODUCTS,
         }),
     }),
-    { name: '100k-savings' }
+    { name: '100k-savings-v2' }
   )
 )

@@ -33,14 +33,15 @@ export function CompoundCurve() {
     [balance, monthlyContribution, annualRate, totalMonths]
   )
 
-  // Dynamic Y-axis: show a meaningful range around current data
+  // Dynamic Y-axis: always start from 0, scale to show the full curve + 100K target
   const yMax = useMemo(() => {
     if (data.length === 0) return 1000
     const maxBalance = Math.max(...data.map((d) => d.balance))
-    // Round up to a nice number, always show at least up to 110K if close
-    if (maxBalance >= 90_000) return 110_000
-    const order = Math.pow(10, Math.floor(Math.log10(maxBalance || 1)))
-    return Math.ceil((maxBalance * 1.15) / order) * order
+    // Always show at least up to 110K so the target line is visible
+    const ceiling = Math.max(maxBalance * 1.1, 110_000)
+    // Round up to a clean number
+    const order = Math.pow(10, Math.floor(Math.log10(ceiling)))
+    return Math.ceil(ceiling / order) * order
   }, [data])
 
   const targetAge = age + Math.floor(mToTarget / 12)
