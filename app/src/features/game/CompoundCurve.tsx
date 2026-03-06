@@ -16,8 +16,16 @@ export function CompoundCurve() {
   const products = useSavingsStore((s) => s.products)
   const [expanded, setExpanded] = useState(true)
 
-  // Single source of truth for rate — shared with savingsStore simulation
-  const annualRate = useMemo(() => getBlendedRate(products), [products])
+  // Chart projection rate: use blended product rate if products are active,
+  // otherwise default to 4% (realistic long-term blended return for the pitch).
+  // This is intentionally different from the game simulation's 2% Tagesgeld baseline —
+  // the chart shows what's achievable with disciplined investing, not just a savings account.
+  const CHART_DEFAULT_RATE = 0.04
+  const annualRate = useMemo(() => {
+    const blended = getBlendedRate(products)
+    const hasActiveProducts = products.some((p) => p.active)
+    return hasActiveProducts ? blended : CHART_DEFAULT_RATE
+  }, [products])
 
   // Project the FULL journey from 0 to 100K so sliders have visible effect
   const mToTarget = monthsToTarget(0, monthlyContribution, annualRate, 100_000)
@@ -177,7 +185,7 @@ export function CompoundCurve() {
               </div>
               <div className="text-rpg-muted">
                 {(annualRate * 100).toFixed(1)}% p.a.
-                {products.some((p) => p.active) ? ' (Produkt-Mix)' : ' (Tagesgeld)'}
+                {products.some((p) => p.active) ? ' (Produkt-Mix)' : ' (Durchschnitt)'}
               </div>
             </div>
           </div>
