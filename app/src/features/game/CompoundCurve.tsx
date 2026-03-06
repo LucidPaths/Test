@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { useSavingsStore, getBlendedRate } from '../../stores/savingsStore'
 import { projectBalance, monthsToTarget } from '../../engine/compound'
+import { PROJECTION_RATE } from '../../constants/gameBalances'
 
 export function CompoundCurve() {
   const balance = useSavingsStore((s) => s.balance)
@@ -16,8 +17,13 @@ export function CompoundCurve() {
   const products = useSavingsStore((s) => s.products)
   const [expanded, setExpanded] = useState(true)
 
-  // Single source of truth for rate — shared with savingsStore simulation
-  const annualRate = useMemo(() => getBlendedRate(products), [products])
+  // Projection rate: use blended product rate if products are active,
+  // otherwise PROJECTION_RATE from gameBalances (single source of truth).
+  // Same rate used by OnboardingView — pitch and chart always agree.
+  const annualRate = useMemo(() => {
+    const hasActiveProducts = products.some((p) => p.active)
+    return hasActiveProducts ? getBlendedRate(products) : PROJECTION_RATE
+  }, [products])
 
   // Project the FULL journey from 0 to 100K so sliders have visible effect
   const mToTarget = monthsToTarget(0, monthlyContribution, annualRate, 100_000)
@@ -173,11 +179,10 @@ export function CompoundCurve() {
             <div className="font-pixel text-[8px] text-center space-y-0.5">
               <div className="text-gold">
                 100K mit {targetAge} Jahren
-                {targetMonthsRemain > 0 && ` + ${targetMonthsRemain}M`}
               </div>
               <div className="text-rpg-muted">
                 {(annualRate * 100).toFixed(1)}% p.a.
-                {products.some((p) => p.active) ? ' (Produkt-Mix)' : ' (Tagesgeld)'}
+                {products.some((p) => p.active) ? ' (Produkt-Mix)' : ' (Durchschnitt)'}
               </div>
             </div>
           </div>

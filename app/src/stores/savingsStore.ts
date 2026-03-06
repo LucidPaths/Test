@@ -35,16 +35,13 @@ interface SavingsStore {
   resetGame: () => void
 }
 
-// German Tagesgeld baseline rate — single source of truth
-// Cross-file contract: OnboardingView and CompoundCurve both reference this
-export const BASELINE_RATE = 0.02
+// Blended annual rate from active products, fallback to PROJECTION_RATE.
+// Single source of truth for rate — used by simulation, chart, and onboarding.
+import { PROJECTION_RATE } from '../constants/gameBalances'
 
-// Blended annual rate from active products, fallback to baseline
-// Single source of truth — also used by CompoundCurve for projection
 export function getBlendedRate(products: FinancialProduct[]): number {
   const active = products.filter((p) => p.active)
-  if (active.length === 0) return BASELINE_RATE
-  // Weighted blend: if you have ETF + Sparplan, rates combine
+  if (active.length === 0) return PROJECTION_RATE
   return active.reduce((sum, p) => sum + p.annualRate, 0) / active.length
 }
 
