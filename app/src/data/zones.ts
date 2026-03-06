@@ -141,7 +141,7 @@ export const ZONES: ZoneDef[] = [
       { id: 'z5-e0', name: 'Steuer-Skelett', emoji: '💀', hpMultiplier: 1.0, tokenMultiplier: 1.0, traits: ['armored'], isBoss: false },
       { id: 'z5-e1', name: 'Finanzamt-Frostgeist', emoji: '🥶', hpMultiplier: 1.2, tokenMultiplier: 1.0, traits: ['shielded'], isBoss: false },
       { id: 'z5-e2', name: 'Abgaben-Alp', emoji: '😱', hpMultiplier: 1.1, tokenMultiplier: 1.2, traits: [], isBoss: false },
-      { id: 'z5-e3', name: 'Nachzahlungs-Ninja', emoji: '🥷', hpMultiplier: 0.8, tokenMultiplier: 1.0, traits: ['swift', 'swift'], isBoss: false },
+      { id: 'z5-e3', name: 'Nachzahlungs-Ninja', emoji: '🥷', hpMultiplier: 0.8, tokenMultiplier: 1.0, traits: ['swift', 'cursed'], isBoss: false },
       { id: 'z5-boss', name: 'Steuer-Sphinx', emoji: '📜', hpMultiplier: 10.0, tokenMultiplier: 3.0, traits: ['armored', 'shielded', 'enraged'], isBoss: true },
     ],
     bossLootTable: [
