@@ -79,3 +79,19 @@ export function getRegenAmount(maxHp: number, traits: EnemyTrait[]): number {
   if (!traits.includes('regenerating')) return 0
   return Math.floor(maxHp * TRAIT_REGEN_PERCENT)
 }
+
+/**
+ * Calculate enemy attack damage.
+ * Derives from zone baseEnemyHP — tougher zones hit harder.
+ * Defense reduces damage (flat reduction, min 1).
+ */
+export function getEnemyAttack(zone: ZoneDef, enemy: ZoneEnemy, playerDefense: number): number {
+  // Enemy base attack: ~15% of zone baseHP, scaled by enemy's HP multiplier
+  const rawAttack = Math.ceil(zone.baseEnemyHP * 0.15 * enemy.hpMultiplier)
+  // Bosses hit 2x harder
+  const bossMultiplier = enemy.isBoss ? 2 : 1
+  const totalAttack = rawAttack * bossMultiplier
+  // Defense reduces damage (cap reduction at 80% so fights are never trivial)
+  const reduction = Math.min(playerDefense, Math.floor(totalAttack * 0.8))
+  return Math.max(1, totalAttack - reduction)
+}
