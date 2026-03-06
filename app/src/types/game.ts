@@ -22,6 +22,13 @@ export interface DamageNumber {
   isSpell?: boolean
 }
 
+export interface PlayerDamageNumber {
+  id: string
+  value: number
+  isHeal: boolean
+  timestamp: number
+}
+
 // Re-export for convenience
 export type { ActiveSpellBuff, ActiveDoT }
 
