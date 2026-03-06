@@ -17,7 +17,9 @@ export function getPetEvolution(pet: Pet, petState: PetState): PetEvolution | nu
  */
 export function getPetBonusValue(pet: Pet, petState: PetState): number {
   const evo = getPetEvolution(pet, petState)
-  return evo ? pet.passiveBonus.value * evo.bonusMultiplier : pet.passiveBonus.value
+  const raw = evo ? pet.passiveBonus.value * evo.bonusMultiplier : pet.passiveBonus.value
+  // Round to 4 decimal places to avoid floating point noise (e.g. 0.15000000000000002)
+  return Math.round(raw * 10000) / 10000
 }
 
 /**

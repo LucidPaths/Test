@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { GameView } from './features/game/GameView'
 import { VillageView } from './features/village/VillageView'
 import { PortfolioView } from './features/portfolio/PortfolioView'
+import { RanglisteView } from './features/rangliste/RanglisteView'
 import { ZoneMap } from './features/game/ZoneMap'
 import { OnboardingView } from './features/onboarding/OnboardingView'
 import { CurrencyDisplay } from './components/CurrencyDisplay'
@@ -15,13 +16,14 @@ import { useMercenaryStore } from './stores/mercenaryStore'
 import { ZONES } from './data/zones'
 import { getEncounterEnemy } from './engine/zones'
 
-type Tab = 'game' | 'village' | 'portfolio' | 'map'
+type Tab = 'game' | 'village' | 'map' | 'portfolio' | 'rangliste'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'game', label: 'Kampf', icon: '⚔️' },
   { id: 'village', label: 'Dorf', icon: '🏘️' },
   { id: 'map', label: 'Karte', icon: '🗺️' },
-  { id: 'portfolio', label: 'Portfolio', icon: '📊' },
+  { id: 'portfolio', label: 'Produkte', icon: '📊' },
+  { id: 'rangliste', label: 'Rang', icon: '🏆' },
 ]
 
 function App() {
@@ -106,6 +108,7 @@ function App() {
         {activeTab === 'village' && <VillageView />}
         {activeTab === 'map' && <ZoneMap />}
         {activeTab === 'portfolio' && <PortfolioView />}
+        {activeTab === 'rangliste' && <RanglisteView />}
       </main>
 
       {/* Bottom nav */}

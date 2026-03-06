@@ -12,10 +12,7 @@ export const PETS: Pet[] = [
     description: 'Dein treuer Begleiter von Anfang an.',
     unlockZoneId: 'zone-0',
     passiveBonus: { stat: 'goldFind', value: 0.05, isMultiplier: false },
-    evolution: [
-      { level: 5, name: 'Golddose', emoji: '🪙', bonusMultiplier: 2.0 },
-      { level: 15, name: 'Schatztruhe', emoji: '📦', bonusMultiplier: 3.0 },
-    ],
+    evolution: [],
   },
   {
     id: 'spar-schwein',
