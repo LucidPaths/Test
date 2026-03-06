@@ -1,10 +1,22 @@
 import type { Pet } from '../types/pet'
 
 /**
- * 5 pets unlocked by clearing zones 3, 5, 7, 9, 11.
+ * 6 pets unlocked by clearing zones 0, 3, 5, 7, 9, 11.
  * Cross-file contract: pet IDs referenced by zones.ts petUnlock field.
  */
 export const PETS: Pet[] = [
+  {
+    id: 'spardose',
+    name: 'Spardose',
+    emoji: '🐖',
+    description: 'Dein treuer Begleiter von Anfang an.',
+    unlockZoneId: 'zone-0',
+    passiveBonus: { stat: 'goldFind', value: 0.05, isMultiplier: false },
+    evolution: [
+      { level: 5, name: 'Golddose', emoji: '🪙', bonusMultiplier: 2.0 },
+      { level: 15, name: 'Schatztruhe', emoji: '📦', bonusMultiplier: 3.0 },
+    ],
+  },
   {
     id: 'spar-schwein',
     name: 'Spar-Schwein',

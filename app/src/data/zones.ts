@@ -23,12 +23,14 @@ export const ZONES: ZoneDef[] = [
       { id: 'z0-e1', name: 'Mahngebühr-Motte', emoji: '🦋', hpMultiplier: 1.1, tokenMultiplier: 1.0, traits: [], isBoss: false },
       { id: 'z0-e2', name: 'Raten-Ratte', emoji: '🐀', hpMultiplier: 0.9, tokenMultiplier: 1.2, traits: [], isBoss: false },
       { id: 'z0-e3', name: 'Dispo-Dunkelelf', emoji: '🧝', hpMultiplier: 1.2, tokenMultiplier: 1.0, traits: [], isBoss: false },
-      { id: 'z0-boss', name: 'Schulden-Souverän', emoji: '👑', hpMultiplier: 6.0, tokenMultiplier: 3.0, traits: ['enraged', 'shielded'], isBoss: true },
+      { id: 'z0-boss', name: 'Schulden-Souverän', emoji: '👑', hpMultiplier: 10.0, tokenMultiplier: 3.0, traits: ['enraged', 'shielded'], isBoss: true },
     ],
     bossLootTable: [
       { itemNameOverride: 'Krone der Schuldenfreiheit', emoji: '👑', slot: 'accessory', guaranteedRarity: 'rare', statProfile: 'balanced' },
     ],
     spellUnlock: 'zins-blitz',
+    petUnlock: 'spardose',
+    mercenaryUnlock: 'starter-gefaehrte',
     completionReward: { tokens: 50 },
   },
 
@@ -46,7 +48,7 @@ export const ZONES: ZoneDef[] = [
       { id: 'z1-e1', name: 'Ausgabe-Assel', emoji: '🪲', hpMultiplier: 0.8, tokenMultiplier: 1.3, traits: ['wealthy'], isBoss: false },
       { id: 'z1-e2', name: 'Provision-Phantom', emoji: '👻', hpMultiplier: 1.2, tokenMultiplier: 1.0, traits: [], isBoss: false },
       { id: 'z1-e3', name: 'Verwaltungs-Vampir', emoji: '🧛', hpMultiplier: 1.1, tokenMultiplier: 1.0, traits: [], isBoss: false },
-      { id: 'z1-boss', name: 'Gebühren-Golem', emoji: '🗿', hpMultiplier: 7.0, tokenMultiplier: 3.0, traits: ['armored', 'enraged'], isBoss: true },
+      { id: 'z1-boss', name: 'Gebühren-Golem', emoji: '🗿', hpMultiplier: 10.0, tokenMultiplier: 3.0, traits: ['armored', 'enraged'], isBoss: true },
     ],
     bossLootTable: [
       { itemNameOverride: 'Gebührenfreier Schild', emoji: '🛡️', slot: 'armor', guaranteedRarity: 'rare', statProfile: 'defense' },
@@ -69,7 +71,7 @@ export const ZONES: ZoneDef[] = [
       { id: 'z2-e1', name: 'Impuls-Igel', emoji: '🦔', hpMultiplier: 1.1, tokenMultiplier: 1.0, traits: ['swift'], isBoss: false },
       { id: 'z2-e2', name: 'Konsum-Krähe', emoji: '🐦', hpMultiplier: 0.9, tokenMultiplier: 1.1, traits: [], isBoss: false },
       { id: 'z2-e3', name: 'Lifestyle-Lurcher', emoji: '🦎', hpMultiplier: 1.2, tokenMultiplier: 1.0, traits: [], isBoss: false },
-      { id: 'z2-boss', name: 'Sparplan-Sphinx', emoji: '🦁', hpMultiplier: 7.5, tokenMultiplier: 3.0, traits: ['shielded', 'regenerating'], isBoss: true },
+      { id: 'z2-boss', name: 'Sparplan-Sphinx', emoji: '🦁', hpMultiplier: 10.0, tokenMultiplier: 3.0, traits: ['shielded', 'regenerating'], isBoss: true },
     ],
     bossLootTable: [
       { itemNameOverride: 'Sparplan-Schwert', emoji: '⚔️', slot: 'weapon', guaranteedRarity: 'rare', statProfile: 'attack' },
@@ -93,7 +95,7 @@ export const ZONES: ZoneDef[] = [
       { id: 'z3-e1', name: 'Strafzins-Spinne', emoji: '🕷️', hpMultiplier: 1.2, tokenMultiplier: 1.0, traits: ['cursed'], isBoss: false },
       { id: 'z3-e2', name: 'Tagesgeld-Troll', emoji: '🧌', hpMultiplier: 1.3, tokenMultiplier: 1.1, traits: [], isBoss: false },
       { id: 'z3-e3', name: 'Festgeld-Fledermaus', emoji: '🦇', hpMultiplier: 0.9, tokenMultiplier: 1.2, traits: [], isBoss: false },
-      { id: 'z3-boss', name: 'Zins-Zerberus', emoji: '🐕', hpMultiplier: 8.0, tokenMultiplier: 3.0, traits: ['armored', 'enraged', 'regenerating'], isBoss: true },
+      { id: 'z3-boss', name: 'Zins-Zerberus', emoji: '🐕', hpMultiplier: 10.0, tokenMultiplier: 3.0, traits: ['armored', 'enraged', 'regenerating'], isBoss: true },
     ],
     bossLootTable: [
       { itemNameOverride: 'Zinseszins-Zepter', emoji: '🔮', slot: 'rune', guaranteedRarity: 'epic', statProfile: 'crit' },
@@ -116,7 +118,7 @@ export const ZONES: ZoneDef[] = [
       { id: 'z4-e1', name: 'Teuerungs-Tiger', emoji: '🐅', hpMultiplier: 1.3, tokenMultiplier: 1.0, traits: [], isBoss: false },
       { id: 'z4-e2', name: 'Kaufkraft-Krake', emoji: '🐙', hpMultiplier: 1.1, tokenMultiplier: 1.1, traits: ['swift'], isBoss: false },
       { id: 'z4-e3', name: 'Preissteigerungs-Poltergeist', emoji: '👾', hpMultiplier: 1.2, tokenMultiplier: 1.0, traits: [], isBoss: false },
-      { id: 'z4-boss', name: 'Inflations-Imperator', emoji: '🌋', hpMultiplier: 8.5, tokenMultiplier: 3.0, traits: ['enraged', 'cursed', 'wealthy'], isBoss: true },
+      { id: 'z4-boss', name: 'Inflations-Imperator', emoji: '🌋', hpMultiplier: 10.0, tokenMultiplier: 3.0, traits: ['enraged', 'cursed', 'wealthy'], isBoss: true },
     ],
     bossLootTable: [
       { itemNameOverride: 'Inflationsschutz-Amulett', emoji: '📿', slot: 'accessory', guaranteedRarity: 'epic', statProfile: 'goldFind' },
@@ -140,7 +142,7 @@ export const ZONES: ZoneDef[] = [
       { id: 'z5-e1', name: 'Finanzamt-Frostgeist', emoji: '🥶', hpMultiplier: 1.2, tokenMultiplier: 1.0, traits: ['shielded'], isBoss: false },
       { id: 'z5-e2', name: 'Abgaben-Alp', emoji: '😱', hpMultiplier: 1.1, tokenMultiplier: 1.2, traits: [], isBoss: false },
       { id: 'z5-e3', name: 'Nachzahlungs-Ninja', emoji: '🥷', hpMultiplier: 0.8, tokenMultiplier: 1.0, traits: ['swift', 'swift'], isBoss: false },
-      { id: 'z5-boss', name: 'Steuer-Sphinx', emoji: '📜', hpMultiplier: 9.0, tokenMultiplier: 3.0, traits: ['armored', 'shielded', 'enraged'], isBoss: true },
+      { id: 'z5-boss', name: 'Steuer-Sphinx', emoji: '📜', hpMultiplier: 10.0, tokenMultiplier: 3.0, traits: ['armored', 'shielded', 'enraged'], isBoss: true },
     ],
     bossLootTable: [
       { itemNameOverride: 'Freistellungs-Klinge', emoji: '🗡️', slot: 'weapon', guaranteedRarity: 'epic', statProfile: 'attack' },
@@ -165,7 +167,7 @@ export const ZONES: ZoneDef[] = [
       { id: 'z6-e2', name: 'TER-Troll', emoji: '🧌', hpMultiplier: 1.3, tokenMultiplier: 1.1, traits: [], isBoss: false },
       { id: 'z6-e3', name: 'Tracking-Phantom', emoji: '👻', hpMultiplier: 1.0, tokenMultiplier: 1.0, traits: ['swift'], isBoss: false },
       { id: 'z6-e4', name: 'Rebalancing-Reiter', emoji: '🏇', hpMultiplier: 1.2, tokenMultiplier: 1.0, traits: ['regenerating'], isBoss: false },
-      { id: 'z6-boss', name: 'Fond-Fürst', emoji: '🤴', hpMultiplier: 9.5, tokenMultiplier: 3.0, traits: ['armored', 'regenerating', 'enraged'], isBoss: true },
+      { id: 'z6-boss', name: 'Fond-Fürst', emoji: '🤴', hpMultiplier: 10.0, tokenMultiplier: 3.0, traits: ['armored', 'regenerating', 'enraged'], isBoss: true },
     ],
     bossLootTable: [
       { itemNameOverride: 'ETF-Ewigkeits-Rüstung', emoji: '🛡️', slot: 'armor', guaranteedRarity: 'epic', statProfile: 'defense' },
@@ -213,7 +215,7 @@ export const ZONES: ZoneDef[] = [
       { id: 'z8-e2', name: 'Crash-Chimäre', emoji: '🦅', hpMultiplier: 1.2, tokenMultiplier: 1.1, traits: ['cursed'], isBoss: false },
       { id: 'z8-e3', name: 'Dividenden-Dämon', emoji: '👹', hpMultiplier: 1.1, tokenMultiplier: 1.3, traits: ['wealthy'], isBoss: false },
       { id: 'z8-e4', name: 'Short-Seller-Schakal', emoji: '🐺', hpMultiplier: 0.9, tokenMultiplier: 1.0, traits: ['swift', 'cursed'], isBoss: false },
-      { id: 'z8-boss', name: 'Börsen-Behemoth', emoji: '🐂', hpMultiplier: 10.5, tokenMultiplier: 3.0, traits: ['enraged', 'armored', 'wealthy'], isBoss: true },
+      { id: 'z8-boss', name: 'Börsen-Behemoth', emoji: '🐂', hpMultiplier: 10.0, tokenMultiplier: 3.0, traits: ['enraged', 'armored', 'wealthy'], isBoss: true },
     ],
     bossLootTable: [
       { itemNameOverride: 'Bullenmarkt-Breitschwert', emoji: '⚔️', slot: 'weapon', guaranteedRarity: 'legendary', statProfile: 'attack' },
@@ -237,7 +239,7 @@ export const ZONES: ZoneDef[] = [
       { id: 'z9-e1', name: 'Korrelations-Kobra', emoji: '🐍', hpMultiplier: 1.0, tokenMultiplier: 1.0, traits: ['swift', 'regenerating'], isBoss: false },
       { id: 'z9-e2', name: 'Allokations-Alligator', emoji: '🐊', hpMultiplier: 1.4, tokenMultiplier: 1.1, traits: ['armored'], isBoss: false },
       { id: 'z9-e3', name: 'Sektor-Wetter-Sturm', emoji: '⛈️', hpMultiplier: 1.1, tokenMultiplier: 1.2, traits: ['enraged'], isBoss: false },
-      { id: 'z9-boss', name: 'Diversi-Drache', emoji: '🐲', hpMultiplier: 11.0, tokenMultiplier: 3.0, traits: ['enraged', 'regenerating', 'shielded', 'cursed'], isBoss: true },
+      { id: 'z9-boss', name: 'Diversi-Drache', emoji: '🐲', hpMultiplier: 10.0, tokenMultiplier: 3.0, traits: ['enraged', 'regenerating', 'shielded', 'cursed'], isBoss: true },
     ],
     bossLootTable: [
       { itemNameOverride: 'Diversifikations-Diamant', emoji: '💎', slot: 'accessory', guaranteedRarity: 'legendary', statProfile: 'balanced' },
@@ -260,7 +262,7 @@ export const ZONES: ZoneDef[] = [
       { id: 'z10-e1', name: 'Deflations-Dschinn', emoji: '🧞', hpMultiplier: 1.1, tokenMultiplier: 1.0, traits: ['shielded', 'swift'], isBoss: false },
       { id: 'z10-e2', name: 'Konjunktur-Koloss', emoji: '🦍', hpMultiplier: 1.5, tokenMultiplier: 1.0, traits: ['armored', 'enraged'], isBoss: false },
       { id: 'z10-e3', name: 'Arbeitsmarkt-Ameise', emoji: '🐜', hpMultiplier: 0.7, tokenMultiplier: 1.5, traits: ['wealthy', 'swift'], isBoss: false },
-      { id: 'z10-boss', name: 'Rezessions-Reaper', emoji: '☠️', hpMultiplier: 12.0, tokenMultiplier: 3.0, traits: ['cursed', 'enraged', 'armored', 'regenerating'], isBoss: true },
+      { id: 'z10-boss', name: 'Rezessions-Reaper', emoji: '☠️', hpMultiplier: 10.0, tokenMultiplier: 3.0, traits: ['cursed', 'enraged', 'armored', 'regenerating'], isBoss: true },
     ],
     bossLootTable: [
       { itemNameOverride: 'Antizyklische Rüstung', emoji: '🛡️', slot: 'armor', guaranteedRarity: 'legendary', statProfile: 'defense' },
@@ -284,7 +286,7 @@ export const ZONES: ZoneDef[] = [
       { id: 'z11-e2', name: 'FIRE-Phoenix', emoji: '🦅', hpMultiplier: 1.0, tokenMultiplier: 1.0, traits: ['swift', 'regenerating', 'enraged'], isBoss: false },
       { id: 'z11-e3', name: 'Zinseszins-Zerberus', emoji: '🐺', hpMultiplier: 1.4, tokenMultiplier: 1.0, traits: ['shielded', 'cursed'], isBoss: false },
       { id: 'z11-e4', name: 'Passives-Einkommen-Geist', emoji: '👻', hpMultiplier: 1.1, tokenMultiplier: 1.5, traits: ['wealthy', 'swift'], isBoss: false },
-      { id: 'z11-boss', name: 'Vermögens-Vulkan-Titan', emoji: '🔥', hpMultiplier: 15.0, tokenMultiplier: 5.0, traits: ['enraged', 'armored', 'regenerating', 'shielded', 'cursed'], isBoss: true },
+      { id: 'z11-boss', name: 'Vermögens-Vulkan-Titan', emoji: '🔥', hpMultiplier: 10.0, tokenMultiplier: 5.0, traits: ['enraged', 'armored', 'regenerating', 'shielded', 'cursed'], isBoss: true },
     ],
     bossLootTable: [
       { itemNameOverride: 'Krone des Vermögens', emoji: '👑', slot: 'accessory', guaranteedRarity: 'legendary', statProfile: 'balanced' },

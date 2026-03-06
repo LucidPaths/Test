@@ -4,10 +4,14 @@ import type { Transaction, FinancialProduct } from '../types/savings'
 import { DEFAULT_PRODUCTS } from '../data/products'
 import { AGE_MIN, AGE_MAX, MONTHLY_CONTRIBUTION_MIN, MONTHLY_CONTRIBUTION_MAX, MAX_TRANSACTION_HISTORY } from '../constants/gameBalances'
 
+export type Gender = 'male' | 'female'
+
 interface SavingsStore {
   // User profile
   age: number
+  gender: Gender
   setAge: (age: number) => void
+  setGender: (gender: Gender) => void
 
   // Game state
   started: boolean
@@ -48,6 +52,7 @@ export const useSavingsStore = create<SavingsStore>()(
   persist(
     (set, get) => ({
       age: 18,
+      gender: 'male' as Gender,
       started: false,
       balance: 0,
       monthlyContribution: 100,
@@ -57,6 +62,7 @@ export const useSavingsStore = create<SavingsStore>()(
       lastSimTick: Date.now(),
 
       setAge: (age) => set({ age: Math.max(AGE_MIN, Math.min(AGE_MAX, age)) }),
+      setGender: (gender) => set({ gender }),
       startGame: () => set({ started: true }),
 
       microSave: (amount, label, icon) =>
@@ -107,6 +113,7 @@ export const useSavingsStore = create<SavingsStore>()(
         set({
           started: false,
           age: 18,
+          gender: 'male' as Gender,
           balance: 0,
           monthlyContribution: 100,
           simulatedMonths: 0,
