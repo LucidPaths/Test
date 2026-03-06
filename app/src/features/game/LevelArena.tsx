@@ -18,6 +18,7 @@ import { TRAIT_ICONS } from '../../types/zone'
 import { ATTACK_INTERVAL_MS, CHARACTER_INFO } from '../../constants/gameBalances'
 import { useSavingsStore } from '../../stores/savingsStore'
 import { ZONES, getZoneById } from '../../data/zones'
+import { TAVERN_FACTS, type TavernFact } from '../../data/tavernFacts'
 import { getSpellById } from '../../data/spells'
 import { getPetById } from '../../data/pets'
 import { getMercById } from '../../data/mercenaries'
@@ -51,6 +52,7 @@ export function LevelArena() {
 
   const [lastDrop, setLastDrop] = useState<{ name: string; rarity: Rarity; emoji: string } | null>(null)
   const [bossIntro, setBossIntro] = useState(false)
+  const [bossTip, setBossTip] = useState<TavernFact | null>(null)
 
   const zone = getZoneById(currentZoneId) ?? ZONES[0]
   const activeMercs = partySlots.filter((id): id is string => id !== null)
@@ -255,6 +257,11 @@ export function LevelArena() {
                 setTimeout(() => setLastDrop(null), 2000)
               }
               useEquipmentStore.getState().markZoneCleared()
+
+              // Show a financial tip on boss kill
+              const tip = TAVERN_FACTS[Math.floor(Math.random() * TAVERN_FACTS.length)]
+              setBossTip(tip)
+              setTimeout(() => setBossTip(null), 5000)
 
               // Unlock spell/pet/merc from this zone immediately
               if (curZone.spellUnlock) useSpellStore.getState().unlockSpell(curZone.spellUnlock)
@@ -507,6 +514,28 @@ export function LevelArena() {
             }}
           >
             {lastDrop.emoji} {lastDrop.name}!
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Boss kill financial tip */}
+      <AnimatePresence>
+        {bossTip && (
+          <motion.div
+            key="boss-tip"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.5 }}
+            className="absolute bottom-8 left-2 right-2 z-20 bg-rpg-panel/95 border border-gold/40 rounded-lg p-2.5 backdrop-blur-sm"
+          >
+            <div className="flex items-start gap-2">
+              <span className="text-base shrink-0">{bossTip.topicEmoji}</span>
+              <div>
+                <div className="font-pixel text-[6px] text-gold mb-0.5">{bossTip.topic}</div>
+                <div className="font-pixel text-[7px] text-rpg-text leading-relaxed">{bossTip.text}</div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
