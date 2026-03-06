@@ -25,10 +25,10 @@ Every component should be self-contained. Pull one out — that specific thing s
 When two systems need to talk, build a bridge — don't duplicate. If data already lives somewhere, reference it. Don't maintain two copies of anything.
 
 **Instantiations:**
-- **4 independent Zustand stores** — `savingsStore`, `characterStore`, `gameStore`, `equipmentStore` each own their state and persist independently. Resetting equipment doesn't touch savings.
-- **Store actions enforce invariants** — `spendTokens()` checks balance before deducting; `upgradeItem()` lives in equipmentStore, not scattered across UI. Village components call actions, never mutate directly.
+- **7 independent Zustand stores** — `savingsStore`, `characterStore`, `gameStore`, `equipmentStore`, `spellStore`, `petStore`, `mercenaryStore` each own their state and persist independently. Resetting equipment doesn't touch savings.
+- **Store actions enforce invariants** — `spendTokens()` checks balance before deducting; `healPlayer()` caps at maxHP and skips if dead; `upgradeItem()` lives in equipmentStore, not scattered across UI. Village components and LevelArena call actions, never mutate directly.
 - **Shared types as single source of truth** — `Rarity`, `EquipSlot`, `Buff` types live in `types/` and are imported everywhere. No duplicate type definitions.
-- **Engine layer is pure functions** — `compound.ts`, `progression.ts`, `loot.ts`, `buffs.ts` have zero React imports. Stores call them; they don't call stores.
+- **Engine layer is pure functions** — `compound.ts`, `progression.ts`, `loot.ts`, `buffs.ts`, `combat.ts`, `mercenaries.ts`, `spells.ts`, `pets.ts` have zero React imports. Stores call them; they don't call stores.
 
 **Demands:**
 - Each component fails independently — one breaking doesn't cascade

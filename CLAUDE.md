@@ -129,7 +129,10 @@ When two files must agree on a string value, format, or list — there MUST be a
 | Zone IDs | `app/src/data/zones.ts` (zone `id` field) | `equipmentStore.currentZoneId`, `zoneProgress` keys | String-based — validated at zone selection |
 | Spell/Pet/Merc IDs | `app/src/data/spells.ts`, `data/pets.ts`, `data/mercenaries.ts` | Respective stores, zone unlock fields | String-based — data files are source of truth |
 | Mana resource | `gameStore.mana/maxMana` | `spellStore.castSpell()`, `SpellBar.tsx` | Action-based — `castSpell` calls `gameStore.spendMana()` |
-| gameStore fan-in | `gameStore.spendTokens()` / `spendMana()` | `equipmentStore`, `spellStore`, `mercenaryStore` | Cross-store call — 3 stores depend on gameStore actions |
+| MercAbility type union | `app/src/types/mercenary.ts` (`MercAbility.type`) | `app/src/data/mercenaries.ts` (ability data), `app/src/engine/mercenaries.ts` (switch), `PartyBonuses` interface | Type-safe — union enforces valid ability types |
+| Player HP formula | `app/src/stores/characterStore.ts` (`recalculate`) | `gameStore.syncPlayerHP()`, `LevelArena.tsx` (HP regen calc) | Single source — characterStore computes, gameStore syncs |
+| PlayerDamageNumber rendering | `app/src/types/game.ts` (`PlayerDamageNumber`) | `gameStore.playerDamageNumbers`, `LevelArena.tsx` (render) | Type-safe — shared interface |
+| gameStore fan-in | `gameStore.spendTokens()` / `spendMana()` / `healPlayer()` | `equipmentStore`, `spellStore`, `mercenaryStore`, `LevelArena.tsx` | Cross-store call — 3 stores + arena depend on gameStore actions |
 
 ---
 
@@ -353,7 +356,7 @@ The "Touch carefully" column tells you the blast radius. **Yes** = changes here 
 | `app/src/engine/*.ts` | Game math — combat, progression, zones, loot, spells, pets, mercs, buffs | Moderate — stores depend on these calculations |
 | `app/src/stores/*.ts` | Zustand stores — savings, character, game, equipment, spells, pets, mercenaries | Yes — UI reads from these; actions enforce invariants |
 | `app/src/types/*.ts` | Shared types — equipment, character, savings, game, zone, spell, pet, mercenary | Yes — cross-file contract source of truth |
-| `app/src/data/*.ts` | Static game content — zones (12), spells (7), pets (5), mercenaries (6) | Moderate — engine and stores reference these |
+| `app/src/data/*.ts` | Static game content — zones (12), spells (7), pets (5), mercenaries (7) | Moderate — engine and stores reference these |
 | `app/src/features/game/*.tsx` | Main game tab — arena, spells, zone map, pets, character panel | Moderate — core gameplay loop |
 | `app/src/features/village/*.tsx` | Village tab — Taverne, Schmiede, Kaserne, Akademie | Usually safe — self-contained token-spend features |
 | `app/src/App.tsx` | Router + layout + tab navigation + store init | Yes — changes here affect all tabs |
@@ -388,22 +391,22 @@ The "Touch carefully" column tells you the blast radius. **Yes** = changes here 
 | Engine: zones | Working | Encounter generation (shuffle bag), HP/reward scaling, zone unlock checks |
 | Engine: spells | Working | Spell effect application, cooldown management |
 | Engine: pets | Working | Pet bonus calculation, evolution stage resolution |
-| Engine: mercenaries | Working | Party bonus aggregation, merc crit damage rolls |
+| Engine: mercenaries | Working | Party bonus aggregation, merc crit damage rolls, HP regen bonus |
 | Engine: achievements | Working | Achievement condition checking |
 | Engine: buffs & milestones | Working | Milestone + product buffs feed into character stats |
 | Constants: gameBalances | Working | Single source of truth for inventory cap, mana, spell limits, age/contribution bounds |
 | Store: savingsStore | Working | Balance, transactions, products, monthly tick, blended rate |
-| Store: characterStore | Working | Level/stats derived from balance + products |
-| Store: gameStore | Working | Enemy HP, mana, damage, combat tokens, streaks, spell buffs, `spendTokens()`, `decrementShield()`, `healEnemy()` |
+| Store: characterStore | Working | Level/stats derived from balance + products, quadratic HP scaling |
+| Store: gameStore | Working | Enemy HP, mana, damage, combat tokens, streaks, spell buffs, player damage numbers, `spendTokens()`, `decrementShield()`, `healEnemy()`, `healPlayer()`, `addPlayerDamageNumber()` |
 | Store: equipmentStore | Working | Inventory (cap 100), 4 equip slots, zone progress, `upgradeItem()`, prestige reset |
 | Store: spellStore | Working | Unlocked/equipped spells (max 3), cooldowns, auto-cast toggle |
 | Store: petStore | Working | Pet collection, XP/leveling, equipped pet (1 at a time) |
 | Store: mercenaryStore | Working | Recruited mercs, party slots (max 2) |
-| Game tab: LevelArena | Working | RAF combat loop, trait engine integration, zone-based spawning, loot notifications |
+| Game tab: LevelArena | Working | RAF combat loop, trait engine integration, zone-based spawning, loot notifications, player-side damage/heal floating numbers |
 | Game tab: SpellBar | Working | 3-slot spell bar with cooldown overlay, mana cost feedback |
 | Game tab: ZoneMap | Working | Zone selection, progress tracking, star ratings |
 | Game tab: PetPanel | Working | Pet display, collection, XP bar |
-| Game tab: CharacterPanel | Working | Gear-aware stats, buff display, equipment slots |
+| Game tab: CharacterPanel | Working | Gear-aware stats, buff display, equipment slots, inline level display |
 | Game tab: CompoundCurve | Working | Recharts area chart with contribution slider |
 | Game tab: MicroSaveAction | Working | RPG-themed save buttons trigger balance + character recalc |
 | Game tab: MilestoneTrack | Working | Horizontal milestone progress bar |

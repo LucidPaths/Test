@@ -53,7 +53,7 @@ app/src/
 │   ├── equipment.ts     # Rarity, EquipSlot, GearItem, RARITY_CONFIG
 │   ├── character.ts     # Character, Buff types
 │   ├── savings.ts       # Transaction, FinancialProduct
-│   ├── game.ts          # Enemy, DamageNumber
+│   ├── game.ts          # Enemy, DamageNumber, PlayerDamageNumber
 │   ├── zone.ts          # ZoneDef, ZoneEnemy, EnemyTrait, ZoneProgress
 │   ├── spell.ts         # Spell, SpellEffect, ActiveSpellBuff
 │   ├── pet.ts           # Pet, PetBonus, PetEvolution
@@ -63,7 +63,7 @@ app/src/
 │   ├── zones.ts         # 12 zone definitions with 60+ enemies
 │   ├── spells.ts        # 7 spell definitions
 │   ├── pets.ts          # 5 pet definitions
-│   ├── mercenaries.ts   # 6 mercenary definitions
+│   ├── mercenaries.ts   # 7 mercenary definitions
 │   ├── products.ts      # Financial product definitions
 │   ├── tavernFacts.ts   # Financial facts for Taverne
 │   └── videos.ts        # Educational video metadata
@@ -87,7 +87,7 @@ app/src/
 | **Loot & equipment** | 5 rarity tiers, 4 gear slots, pity counter (15 threshold), boss-specific loot |
 | **Spells** | 7 spells with mana system, cooldowns, auto-cast, and manual casting |
 | **Pets** | 5 pets with passive bonuses, XP leveling, and evolution stages |
-| **Mercenaries** | 6 recruitable mercs with party slots (max 2), combat contributions |
+| **Mercenaries** | 7 recruitable mercs with party slots, combat contributions, HP regen |
 | **Prestige** | Monthly deposit unlocks new zones, preserves zone progress |
 | **Village** | Spend combat tokens: Taverne (facts), Schmiede (upgrades), Kaserne (mercs), Akademie (videos) |
 | **Compound curve** | Recharts visualization of savings growth over time |
