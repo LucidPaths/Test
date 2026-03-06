@@ -27,6 +27,7 @@ import { SpellBar } from './SpellBar'
 export function LevelArena() {
   const enemy = useGameStore((s) => s.enemy)
   const damageNumbers = useGameStore((s) => s.damageNumbers)
+  const playerDamageNumbers = useGameStore((s) => s.playerDamageNumbers)
   const enemiesDefeated = useGameStore((s) => s.enemiesDefeated)
   const killStreak = useGameStore((s) => s.killStreak)
   const mana = useGameStore((s) => s.mana)
@@ -138,7 +139,10 @@ export function LevelArena() {
         useGameStore.getState().regenMana(1 + partyBonus.manaRegenBonus)
         if (partyBonus.hpRegenBonus > 0) {
           const healAmt = Math.max(1, Math.floor(gameState.playerMaxHp * partyBonus.hpRegenBonus))
+          const beforeHp = useGameStore.getState().playerHp
           useGameStore.getState().healPlayer(healAmt)
+          const actualHeal = useGameStore.getState().playerHp - beforeHp
+          if (actualHeal > 0) useGameStore.getState().addPlayerDamageNumber(actualHeal, true)
         }
 
         // --- Auto-cast spells ---
@@ -194,11 +198,14 @@ export function LevelArena() {
         const curEnemyDef = getEncounterEnemy(curZone, curSeq, curEncounter)
         const enemyDmg = getEnemyAttack(curZone, curEnemyDef, curDefense)
         const playerDied = useGameStore.getState().damagePlayer(enemyDmg)
-
-        if (playerDied) {
+        if (enemyDmg > 0) {
+          useGameStore.getState().addPlayerDamageNumber(enemyDmg, false)
           playerShakeRef.current = true
           forceUpdate()
           setTimeout(() => { playerShakeRef.current = false; forceUpdate() }, 300)
+        }
+
+        if (playerDied) {
 
           // Respawn after 2 seconds, reset zone run back to encounter 1
           setTimeout(() => {
@@ -504,7 +511,7 @@ export function LevelArena() {
         )}
       </AnimatePresence>
 
-      {/* Damage numbers */}
+      {/* Damage numbers (enemy side — right) */}
       <AnimatePresence>
         {damageNumbers.map((d) => (
           <motion.div
@@ -513,12 +520,30 @@ export function LevelArena() {
             animate={{ opacity: 0, y: -40 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.7 }}
-            className={`absolute top-1/3 left-1/2 font-pixel pointer-events-none ${
+            className={`absolute top-1/3 left-[65%] font-pixel pointer-events-none ${
               d.isSpell ? 'text-blue-400 text-sm' :
               d.isCrit ? 'text-gold text-sm' : 'text-white text-xs'
             }`}
           >
             {d.value === 0 ? 'MISS' : `${d.isCrit ? '💥' : d.isSpell ? '✨' : ''}-${d.value}`}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      {/* Player damage/heal numbers (player side — left) */}
+      <AnimatePresence>
+        {playerDamageNumbers.map((d) => (
+          <motion.div
+            key={d.id}
+            initial={{ opacity: 1, y: 0, x: Math.random() * 40 - 20 }}
+            animate={{ opacity: 0, y: -40 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.7 }}
+            className={`absolute top-1/3 left-[25%] font-pixel pointer-events-none ${
+              d.isHeal ? 'text-green-400 text-xs' : 'text-rpg-accent text-xs'
+            }`}
+          >
+            {d.isHeal ? `+${d.value}` : `-${d.value}`}
           </motion.div>
         ))}
       </AnimatePresence>

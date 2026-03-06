@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Enemy, DamageNumber, ActiveSpellBuff, ActiveDoT } from '../types/game'
+import type { Enemy, DamageNumber, PlayerDamageNumber, ActiveSpellBuff, ActiveDoT } from '../types/game'
 import type { ZoneEnemy, ZoneDef } from '../types/zone'
 import { getZoneEnemyHP } from '../engine/zones'
 import { TRAIT_SHIELD_HITS } from '../engine/combat'
@@ -11,6 +11,7 @@ const INITIAL_PLAYER_HP = 100
 interface GameStore {
   enemy: Enemy
   damageNumbers: DamageNumber[]
+  playerDamageNumbers: PlayerDamageNumber[]
   isIdle: boolean
   lastTick: number
   enemiesDefeated: number
@@ -37,6 +38,7 @@ interface GameStore {
   respawnPlayer: () => void
   spendTokens: (cost: number) => boolean
   addDamageNumber: (value: number, isCrit: boolean, isSpell?: boolean) => void
+  addPlayerDamageNumber: (value: number, isHeal: boolean) => void
   cleanDamageNumbers: () => void
   setLastTick: (t: number) => void
   incrementStreak: () => void
@@ -64,6 +66,7 @@ export const useGameStore = create<GameStore>()(
     (set, get) => ({
       enemy: { ...DEFAULT_ENEMY },
       damageNumbers: [],
+      playerDamageNumbers: [],
       isIdle: true,
       lastTick: Date.now(),
       enemiesDefeated: 0,
@@ -184,10 +187,25 @@ export const useGameStore = create<GameStore>()(
         }))
       },
 
+      addPlayerDamageNumber: (value, isHeal) => {
+        set((state) => ({
+          playerDamageNumbers: [
+            ...state.playerDamageNumbers,
+            {
+              id: `pdmg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              value,
+              isHeal,
+              timestamp: Date.now(),
+            },
+          ].slice(-10),
+        }))
+      },
+
       cleanDamageNumbers: () => {
         const now = Date.now()
         set((state) => ({
           damageNumbers: state.damageNumbers.filter((d) => now - d.timestamp < 1000),
+          playerDamageNumbers: state.playerDamageNumbers.filter((d) => now - d.timestamp < 1000),
         }))
       },
 
@@ -271,6 +289,7 @@ export const useGameStore = create<GameStore>()(
       resetCombat: () => set({
         enemy: { ...DEFAULT_ENEMY },
         damageNumbers: [],
+        playerDamageNumbers: [],
         enemiesDefeated: 0,
         combatTokens: 0,
         playerHp: INITIAL_PLAYER_HP,
