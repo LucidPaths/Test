@@ -6,7 +6,7 @@ import { useGameStore } from '../../stores/gameStore'
 import { useEquipmentStore } from '../../stores/equipmentStore'
 import { useSavingsStore } from '../../stores/savingsStore'
 import { getZoneById } from '../../data/zones'
-import { MAX_PARTY_SLOTS, PARTY_SLOT_3_ZONE, PARTY_SLOT_4_ZONE } from '../../constants/gameBalances'
+import { MAX_PARTY_SLOTS, PARTY_SLOT_COSTS } from '../../constants/gameBalances'
 
 interface KaserneProps {
   onBack: () => void
@@ -19,6 +19,7 @@ export function Kaserne({ onBack }: KaserneProps) {
   const combatTokens = useGameStore((s) => s.combatTokens)
   const zoneProgress = useEquipmentStore((s) => s.zoneProgress)
   const gender = useSavingsStore((s) => s.gender)
+  const simulatedMonths = useSavingsStore((s) => s.simulatedMonths)
   const [result, setResult] = useState<string | null>(null)
 
   // Resolve starter merc based on player gender
@@ -44,26 +45,27 @@ export function Kaserne({ onBack }: KaserneProps) {
     useMercenaryStore.getState().removeFromParty(slotIndex)
   }
 
-  const handleUnlockSlot3 = () => {
+  // Slot 2 unlocks after first vesting (simulatedMonths >= 1)
+  const canUnlockVestingSlot = unlockedSlots === 1 && simulatedMonths >= 1
+
+  const handleUnlockVestingSlot = () => {
     useMercenaryStore.getState().unlockPartySlot()
-    setResult('✅ 3. Slot freigeschaltet!')
+    setResult('✅ 2. Slot freigeschaltet! (Erster Sparplan)')
     setTimeout(() => setResult(null), 2000)
   }
 
-  const handleUnlockSlot4 = () => {
-    // 4th slot costs €5 micro-investment
+  // Paid slots (3, 4, 5) — each costs €5, €10, €20 respectively
+  const nextPaidSlot = unlockedSlots >= 2 ? unlockedSlots + 1 : null
+  const nextPaidCost = nextPaidSlot ? PARTY_SLOT_COSTS[nextPaidSlot] : null
+
+  const handleUnlockPaidSlot = () => {
+    if (!nextPaidSlot || !nextPaidCost) return
     const savings = useSavingsStore.getState()
-    savings.microSave(5, 'Gruppen-Erweiterung', '🏰')
+    savings.microSave(nextPaidCost, `Gruppen-Slot ${nextPaidSlot}`, '🏰')
     useMercenaryStore.getState().unlockPartySlot()
-    setResult('✅ 4. Slot freigeschaltet! €5 investiert!')
+    setResult(`✅ ${nextPaidSlot}. Slot freigeschaltet! €${nextPaidCost} investiert!`)
     setTimeout(() => setResult(null), 2000)
   }
-
-  // Determine which locked slots to show
-  const slot3Zone = getZoneById(PARTY_SLOT_3_ZONE)
-  const slot4Zone = getZoneById(PARTY_SLOT_4_ZONE)
-  const slot3ZoneCleared = zoneProgress[PARTY_SLOT_3_ZONE]?.cleared ?? false
-  const slot4ZoneCleared = zoneProgress[PARTY_SLOT_4_ZONE]?.cleared ?? false
 
   return (
     <div className="flex flex-col gap-3 p-3">
@@ -79,7 +81,7 @@ export function Kaserne({ onBack }: KaserneProps) {
 
       {/* Party slots */}
       <div className="bg-rpg-bg/50 rounded-lg p-2">
-        <span className="font-pixel text-[7px] text-rpg-muted">Gruppe ({partySlots.length}/{MAX_PARTY_SLOTS})</span>
+        <span className="font-pixel text-[7px] text-rpg-muted">Gruppe ({partySlots.filter(Boolean).length}/{unlockedSlots} Plätze — max {MAX_PARTY_SLOTS})</span>
         <div className="flex gap-2 mt-1.5 flex-wrap">
           {partySlots.map((mercId, idx) => {
             const merc = mercId ? getMercById(mercId, gender) : null
@@ -106,37 +108,33 @@ export function Kaserne({ onBack }: KaserneProps) {
             )
           })}
 
-          {/* Locked slot indicators */}
-          {unlockedSlots < 3 && (
+          {/* Locked slot: vesting unlock (slot 2) */}
+          {unlockedSlots === 1 && (
             <div className="flex-1 flex items-center justify-center p-2 rounded-lg border border-rpg-border/30 bg-rpg-panel/30 min-h-[48px] min-w-[120px]">
-              {slot3ZoneCleared ? (
+              {canUnlockVestingSlot ? (
                 <button
-                  onClick={handleUnlockSlot3}
+                  onClick={handleUnlockVestingSlot}
                   className="font-pixel text-[6px] text-gold cursor-pointer hover:text-gold/80"
                 >
-                  🔓 3. Slot freischalten
+                  🔓 2. Slot freischalten (Sparplan aktiv!)
                 </button>
               ) : (
                 <span className="font-pixel text-[6px] text-rpg-muted">
-                  🔒 {slot3Zone ? `${slot3Zone.emoji} ${slot3Zone.name}` : PARTY_SLOT_3_ZONE}
+                  🔒 Erster Sparplan nötig
                 </span>
               )}
             </div>
           )}
-          {unlockedSlots < 4 && unlockedSlots >= 3 && (
+
+          {/* Locked slot: paid unlock (slots 3-5) */}
+          {nextPaidSlot && nextPaidSlot <= MAX_PARTY_SLOTS && (
             <div className="flex-1 flex items-center justify-center p-2 rounded-lg border border-rpg-border/30 bg-rpg-panel/30 min-h-[48px] min-w-[120px]">
-              {slot4ZoneCleared ? (
-                <button
-                  onClick={handleUnlockSlot4}
-                  className="font-pixel text-[6px] text-gold cursor-pointer hover:text-gold/80"
-                >
-                  🔓 4. Slot — €5 investieren
-                </button>
-              ) : (
-                <span className="font-pixel text-[6px] text-rpg-muted">
-                  🔒 {slot4Zone ? `${slot4Zone.emoji} ${slot4Zone.name}` : PARTY_SLOT_4_ZONE} + €5
-                </span>
-              )}
+              <button
+                onClick={handleUnlockPaidSlot}
+                className="font-pixel text-[6px] text-gold cursor-pointer hover:text-gold/80"
+              >
+                🔓 {nextPaidSlot}. Slot — €{nextPaidCost} investieren
+              </button>
             </div>
           )}
         </div>
