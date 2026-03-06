@@ -21,7 +21,7 @@ export function CompoundCurve() {
 
   // Project the FULL journey from 0 to 100K so sliders have visible effect
   const mToTarget = monthsToTarget(0, monthlyContribution, annualRate, 100_000)
-  const totalMonths = Math.min(600, mToTarget + 12) // cap at 50 years
+  const totalMonths = Math.min(1500, mToTarget + 12) // chart display cap at 125 years
   const data = useMemo(
     () => projectBalance(0, monthlyContribution, annualRate, totalMonths),
     [monthlyContribution, annualRate, totalMonths]

@@ -47,6 +47,9 @@ function App() {
   // Initialize character from persisted savings on mount
   useEffect(() => {
     recalculate(balance, products)
+    // Sync player HP from character level
+    const charMaxHp = useCharacterStore.getState().maxHp
+    useGameStore.getState().syncPlayerHP(charMaxHp)
     // Spawn zone-based enemy
     const eqState = useEquipmentStore.getState()
     const zone = ZONES.find((z) => z.id === eqState.currentZoneId)

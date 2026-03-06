@@ -6,13 +6,13 @@ import { useEquipmentStore, getGearBonuses } from '../../stores/equipmentStore'
 import { useSpellStore } from '../../stores/spellStore'
 import { usePetStore } from '../../stores/petStore'
 import { useMercenaryStore } from '../../stores/mercenaryStore'
-import { getDPS, getCritChance } from '../../engine/progression'
+import { getDPS, getCritChance, getDefense } from '../../engine/progression'
 import { rollLootDrop, rollBossLoot } from '../../engine/loot'
 import { getEncounterEnemy } from '../../engine/zones'
 import { isSpellReady, applySpellEffect } from '../../engine/spells'
 import { getPartyBonuses, rollMercDamage } from '../../engine/mercenaries'
 import { getPetBonusValue } from '../../engine/pets'
-import { applyTraitModifiers, getEffectiveCritChance, getRegenAmount } from '../../engine/combat'
+import { applyTraitModifiers, getEffectiveCritChance, getRegenAmount, getEnemyAttack } from '../../engine/combat'
 import { RARITY_CONFIG, type Rarity } from '../../types/equipment'
 import { TRAIT_ICONS } from '../../types/zone'
 import { ATTACK_INTERVAL_MS, CHARACTER_INFO } from '../../constants/gameBalances'
@@ -32,12 +32,14 @@ export function LevelArena() {
   const mana = useGameStore((s) => s.mana)
   const maxMana = useGameStore((s) => s.maxMana)
   const activeSpellBuffs = useGameStore((s) => s.activeSpellBuffs)
+  const playerHp = useGameStore((s) => s.playerHp)
+  const playerMaxHp = useGameStore((s) => s.playerMaxHp)
+  const playerDead = useGameStore((s) => s.playerDead)
 
   const currentZoneId = useEquipmentStore((s) => s.currentZoneId)
   const encounter = useEquipmentStore((s) => s.encounter)
   const encounterSequence = useEquipmentStore((s) => s.encounterSequence)
   const equipped = useEquipmentStore((s) => s.equipped)
-  const zoneProgress = useEquipmentStore((s) => s.zoneProgress)
 
   const char = useCharacterStore()
   const gender = useSavingsStore((s) => s.gender)
@@ -53,6 +55,7 @@ export function LevelArena() {
 
   const gear = getGearBonuses(equipped)
   const partyBonuses = getPartyBonuses(partySlots)
+  const defense = getDefense(char) + gear.defense
 
   // Pet bonus
   let petAttackBonus = 0
@@ -69,27 +72,36 @@ export function LevelArena() {
     }
   }
 
-  // Spell buff bonuses
+  // Spell buff bonuses (defense buffs also reduce incoming damage)
   let spellAttackBonus = 0
   let spellCritBonus = 0
+  let spellDefBonus = 0
   for (const buff of activeSpellBuffs) {
     if (buff.stat === 'attack') spellAttackBonus += buff.value
     if (buff.stat === 'critChance') spellCritBonus += buff.value
+    if (buff.stat === 'defense') spellDefBonus += buff.value
   }
 
   const baseDps = getDPS(char, gear.attack)
   const dps = Math.floor((baseDps + partyBonuses.flatDPSBonus) * (1 + partyBonuses.percentDPSBonus + petAttackBonus + spellAttackBonus))
   const critChance = Math.min(0.5, getCritChance(char, gear.critChance) + partyBonuses.critBoostBonus + petCritBonus + spellCritBonus)
   const totalGoldFind = gear.goldFind + partyBonuses.tokenBoostBonus + petGoldFindBonus
+  const totalDefense = defense + Math.floor(defense * spellDefBonus)
+
+  // Sync player max HP from character level
+  useEffect(() => {
+    useGameStore.getState().syncPlayerHP(char.maxHp)
+  }, [char.maxHp])
 
   // Stable ref for RAF callback
-  const combatRef = useRef({ dps, critChance, goldFind: totalGoldFind, encounter, zone, encounterSequence, partySlots })
-  combatRef.current = { dps, critChance, goldFind: totalGoldFind, encounter, zone, encounterSequence, partySlots }
+  const combatRef = useRef({ dps, critChance, goldFind: totalGoldFind, encounter, zone, encounterSequence, partySlots, defense: totalDefense })
+  combatRef.current = { dps, critChance, goldFind: totalGoldFind, encounter, zone, encounterSequence, partySlots, defense: totalDefense }
 
   const lastTickRef = useRef(performance.now())
   const accumRef = useRef(0)
   const rafRef = useRef<number>(0)
   const shakeRef = useRef(false)
+  const playerShakeRef = useRef(false)
   const [, forceUpdate] = useForceUpdate()
 
   useEffect(() => {
@@ -107,10 +119,18 @@ export function LevelArena() {
         const {
           dps: curDps, critChance: curCrit, goldFind,
           encounter: curEncounter, zone: curZone, encounterSequence: curSeq,
-          partySlots: curParty,
+          partySlots: curParty, defense: curDefense,
         } = combatRef.current
 
-        const curEnemy = useGameStore.getState().enemy
+        const gameState = useGameStore.getState()
+        const curEnemy = gameState.enemy
+
+        // --- Skip combat if player is dead ---
+        if (gameState.playerDead) {
+          useGameStore.getState().cleanDamageNumbers()
+          rafRef.current = requestAnimationFrame(tick)
+          return
+        }
 
         // --- Mana regen ---
         const manaExtra = getPartyBonuses(curParty).manaRegenBonus
@@ -165,8 +185,26 @@ export function LevelArena() {
         const mercDmg = rollMercDamage(curParty)
         const totalDmg = dmg + mercDmg
 
-        if (totalDmg > 0) {
-          const curEnemyDef = getEncounterEnemy(curZone, curSeq, curEncounter)
+        // --- Enemy attacks player ---
+        const curEnemyDef = getEncounterEnemy(curZone, curSeq, curEncounter)
+        const enemyDmg = getEnemyAttack(curZone, curEnemyDef, curDefense)
+        const playerDied = useGameStore.getState().damagePlayer(enemyDmg)
+
+        if (playerDied) {
+          playerShakeRef.current = true
+          forceUpdate()
+          setTimeout(() => { playerShakeRef.current = false; forceUpdate() }, 300)
+
+          // Respawn after 2 seconds, restart current encounter
+          setTimeout(() => {
+            useGameStore.getState().respawnPlayer()
+            const charLvl = useCharacterStore.getState().level
+            const respawnEnemy = getEncounterEnemy(curZone, curSeq, curEncounter)
+            useGameStore.getState().spawnEnemy(curZone, respawnEnemy, charLvl)
+          }, 2000)
+        }
+
+        if (totalDmg > 0 && !playerDied) {
           const tokenMult = curZone.baseTokenReward * curEnemyDef.tokenMultiplier / 10
 
           const died = useGameStore.getState().dealDamage(totalDmg, isCrit, goldFind, tokenMult)
@@ -246,7 +284,7 @@ export function LevelArena() {
               }
             }
           }
-        } else {
+        } else if (totalDmg === 0 && !playerDied) {
           useGameStore.getState().addDamageNumber(0, false)
         }
       }
@@ -303,11 +341,30 @@ export function LevelArena() {
         )}
       </AnimatePresence>
 
+      {/* Death overlay */}
+      <AnimatePresence>
+        {playerDead && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-20 flex items-center justify-center bg-rpg-bg/90 rounded-lg border-2 border-rpg-accent"
+          >
+            <div className="text-center">
+              <div className="text-4xl mb-2">💀</div>
+              <div className="font-pixel text-[10px] text-rpg-accent">BESIEGT!</div>
+              <div className="font-pixel text-[6px] text-rpg-muted mt-1">Wiederbelebung...</div>
+              <div className="font-pixel text-[5px] text-rpg-muted mt-0.5">-10% Tokens</div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Combat area */}
       <div className="flex items-center justify-center gap-4 py-3">
         {/* Player + party side */}
         <div className="flex flex-col items-center gap-1">
-          <div className="text-3xl animate-idle-bob">{CHARACTER_INFO[gender].emoji}</div>
+          <div className={`text-3xl animate-idle-bob ${playerShakeRef.current ? 'animate-shake' : ''}`}>{CHARACTER_INFO[gender].emoji}</div>
           <span className="font-pixel text-[6px] text-rpg-muted">DPS {dps}</span>
           {/* Party members (mercs + pet) */}
           {(activeMercs.length > 0 || equippedPetId) && (
@@ -324,7 +381,6 @@ export function LevelArena() {
                 const pet = getPetById(equippedPetId)
                 const petState = petStates[equippedPetId]
                 if (!pet || !petState) return null
-                // Inline evolution check
                 const evo = [...pet.evolution].reverse().find(e => petState.level >= e.level)
                 return (
                   <span key="pet" className="text-sm animate-idle-bob" title={pet.name} style={{ animationDelay: '0.4s' }}>
@@ -359,7 +415,21 @@ export function LevelArena() {
         </div>
       </div>
 
-      {/* HP bar */}
+      {/* Player HP bar */}
+      <div className="w-full max-w-[260px] mx-auto mb-1">
+        <div className="flex items-center gap-1">
+          <span className="font-pixel text-[6px] text-xp-green">HP</span>
+          <div className="flex-1 bg-rpg-bg rounded-full h-1.5 overflow-hidden border border-white/10">
+            <div
+              className={`h-full transition-all duration-300 ${playerHp / playerMaxHp < 0.3 ? 'bg-rpg-accent' : 'bg-xp-green'}`}
+              style={{ width: `${playerMaxHp > 0 ? (playerHp / playerMaxHp) * 100 : 0}%` }}
+            />
+          </div>
+          <span className="font-pixel text-[6px] text-rpg-muted">{playerHp}/{playerMaxHp}</span>
+        </div>
+      </div>
+
+      {/* Enemy HP bar */}
       <div className="w-full max-w-[260px] mx-auto">
         <HealthBar
           current={enemy.hp}

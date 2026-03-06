@@ -41,7 +41,9 @@ export function projectBalance(
 }
 
 /**
- * Calculate months to reach target balance
+ * Calculate months to reach target balance.
+ * No artificial cap — returns actual months needed so callers show correct values.
+ * Safety guard at 2400 months (200 years) prevents infinite loops only.
  */
 export function monthsToTarget(
   principal: number,
@@ -52,7 +54,7 @@ export function monthsToTarget(
   const monthlyRate = annualRate / 12
   let balance = principal
   let months = 0
-  const maxMonths = 600 // 50 years cap
+  const maxMonths = 2400 // safety guard — no realistic scenario exceeds 200 years
 
   while (balance < target && months < maxMonths) {
     balance = balance * (1 + monthlyRate) + monthlyContribution

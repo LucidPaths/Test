@@ -6,6 +6,8 @@ import { getZoneEnemyHP } from '../engine/zones'
 import { TRAIT_SHIELD_HITS } from '../engine/combat'
 import { INITIAL_MANA, INITIAL_MAX_MANA } from '../constants/gameBalances'
 
+const INITIAL_PLAYER_HP = 100
+
 interface GameStore {
   enemy: Enemy
   damageNumbers: DamageNumber[]
@@ -13,6 +15,11 @@ interface GameStore {
   lastTick: number
   enemiesDefeated: number
   combatTokens: number
+
+  // ── Player combat state ──
+  playerHp: number
+  playerMaxHp: number
+  playerDead: boolean
 
   // ── Zone combat state ──
   killStreak: number
@@ -25,6 +32,9 @@ interface GameStore {
   // Actions
   spawnEnemy: (zone: ZoneDef, zoneEnemy: ZoneEnemy, characterLevel: number) => void
   dealDamage: (amount: number, isCrit: boolean, goldFindBonus?: number, tokenMultiplier?: number) => boolean
+  damagePlayer: (amount: number) => boolean  // returns true if player died
+  syncPlayerHP: (maxHp: number) => void      // called on level-up/recalculate
+  respawnPlayer: () => void
   spendTokens: (cost: number) => boolean
   addDamageNumber: (value: number, isCrit: boolean, isSpell?: boolean) => void
   cleanDamageNumbers: () => void
@@ -57,6 +67,9 @@ export const useGameStore = create<GameStore>()(
       lastTick: Date.now(),
       enemiesDefeated: 0,
       combatTokens: 0,
+      playerHp: INITIAL_PLAYER_HP,
+      playerMaxHp: INITIAL_PLAYER_HP,
+      playerDead: false,
       killStreak: 0,
       bestStreak: 0,
       mana: INITIAL_MANA,
@@ -114,6 +127,39 @@ export const useGameStore = create<GameStore>()(
 
         return died
       },
+
+      damagePlayer: (amount) => {
+        const state = get()
+        if (state.playerDead) return true
+        const newHp = Math.max(0, state.playerHp - amount)
+        const died = newHp <= 0
+        set({
+          playerHp: newHp,
+          playerDead: died,
+          // Death penalty: lose 10% tokens and reset streak
+          ...(died ? {
+            killStreak: 0,
+            combatTokens: Math.floor(state.combatTokens * 0.9),
+          } : {}),
+        })
+        return died
+      },
+
+      syncPlayerHP: (maxHp) => {
+        const state = get()
+        // Increase max and heal proportionally (don't lose current HP on level-up)
+        const ratio = state.playerMaxHp > 0 ? state.playerHp / state.playerMaxHp : 1
+        set({
+          playerMaxHp: maxHp,
+          playerHp: state.playerDead ? maxHp : Math.max(state.playerHp, Math.floor(maxHp * ratio)),
+        })
+      },
+
+      respawnPlayer: () =>
+        set((s) => ({
+          playerHp: s.playerMaxHp,
+          playerDead: false,
+        })),
 
       spendTokens: (cost) => {
         const state = get()
@@ -221,6 +267,9 @@ export const useGameStore = create<GameStore>()(
         damageNumbers: [],
         enemiesDefeated: 0,
         combatTokens: 0,
+        playerHp: INITIAL_PLAYER_HP,
+        playerMaxHp: INITIAL_PLAYER_HP,
+        playerDead: false,
         killStreak: 0,
         bestStreak: 0,
         mana: INITIAL_MANA,
