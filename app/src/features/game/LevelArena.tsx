@@ -245,7 +245,7 @@ export function LevelArena() {
               // Unlock spell/pet/merc from this zone immediately
               if (curZone.spellUnlock) useSpellStore.getState().unlockSpell(curZone.spellUnlock)
               if (curZone.petUnlock) usePetStore.getState().unlockPet(curZone.petUnlock)
-              // Merc unlocks are handled by Kaserne (requires recruit action)
+              // Merc unlocks are zone-based (Kaserne shows them when zone is accessible)
             } else {
               const drop = rollLootDrop(curEncounter + curZone.unlockMonth * 5, currentPity)
               if (drop) {

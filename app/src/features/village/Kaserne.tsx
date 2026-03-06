@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { MERCENARIES, getMercById, getStarterMerc } from '../../data/mercenaries'
 import { useMercenaryStore } from '../../stores/mercenaryStore'
 import { useGameStore } from '../../stores/gameStore'
-import { useEquipmentStore } from '../../stores/equipmentStore'
+
 import { useSavingsStore } from '../../stores/savingsStore'
 import { getZoneById } from '../../data/zones'
+import { isZoneUnlocked } from '../../engine/zones'
 import { MAX_PARTY_SLOTS, PARTY_SLOT_COSTS } from '../../constants/gameBalances'
 
 interface KaserneProps {
@@ -17,7 +18,6 @@ export function Kaserne({ onBack }: KaserneProps) {
   const partySlots = useMercenaryStore((s) => s.partySlots)
   const unlockedSlots = useMercenaryStore((s) => s.unlockedSlots)
   const combatTokens = useGameStore((s) => s.combatTokens)
-  const zoneProgress = useEquipmentStore((s) => s.zoneProgress)
   const gender = useSavingsStore((s) => s.gender)
   const simulatedMonths = useSavingsStore((s) => s.simulatedMonths)
   const [result, setResult] = useState<string | null>(null)
@@ -157,8 +157,7 @@ export function Kaserne({ onBack }: KaserneProps) {
       {/* Mercenary list */}
       <div className="flex flex-col gap-2">
         {resolvedMercs.map((merc) => {
-          const zoneCleared = zoneProgress[merc.unlockZoneId]?.cleared ?? false
-          const unlocked = zoneCleared
+          const unlocked = isZoneUnlocked(merc.unlockZoneId, simulatedMonths)
           const recruited = recruitedIds.includes(merc.id)
           const inParty = partySlots.includes(merc.id)
           const zone = getZoneById(merc.unlockZoneId)
