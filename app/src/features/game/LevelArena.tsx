@@ -133,9 +133,13 @@ export function LevelArena() {
           return
         }
 
-        // --- Mana regen ---
-        const manaExtra = getPartyBonuses(curParty, curMercLevels).manaRegenBonus
-        useGameStore.getState().regenMana(1 + manaExtra)
+        // --- Mana regen + HP regen ---
+        const partyBonus = getPartyBonuses(curParty, curMercLevels)
+        useGameStore.getState().regenMana(1 + partyBonus.manaRegenBonus)
+        if (partyBonus.hpRegenBonus > 0) {
+          const healAmt = Math.max(1, Math.floor(gameState.playerMaxHp * partyBonus.hpRegenBonus))
+          useGameStore.getState().healPlayer(healAmt)
+        }
 
         // --- Auto-cast spells ---
         const spellState = useSpellStore.getState()

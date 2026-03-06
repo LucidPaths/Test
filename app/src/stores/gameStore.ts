@@ -50,6 +50,7 @@ interface GameStore {
   cleanExpiredBuffs: () => void
   decrementShield: () => void
   healEnemy: (amount: number) => void
+  healPlayer: (amount: number) => void
   resetCombat: () => void
 }
 
@@ -260,6 +261,11 @@ export const useGameStore = create<GameStore>()(
             ...s.enemy,
             hp: Math.min(s.enemy.maxHp, s.enemy.hp + amount),
           },
+        })),
+
+      healPlayer: (amount) =>
+        set((s) => ({
+          playerHp: s.playerDead ? s.playerHp : Math.min(s.playerMaxHp, s.playerHp + amount),
         })),
 
       resetCombat: () => set({

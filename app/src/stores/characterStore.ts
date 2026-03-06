@@ -32,7 +32,9 @@ export const useCharacterStore = create<CharacterStore>()((set) => ({
     const level = getLevelForBalance(balance)
     const xpProgress = getXPProgress(balance)
     const buffs = getActiveBuffs(balance, products)
-    const maxHp = 100 + level * 10
+    // Quadratic scaling: early levels feel similar, higher levels gain survivability
+    // Lv1: 110, Lv10: 220, Lv50: 1100, Lv80: 2180, Lv100: 3100
+    const maxHp = 100 + level * 10 + Math.floor(level * level * 0.2)
 
     set({
       level,
