@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { useSavingsStore, BASELINE_RATE } from '../../stores/savingsStore'
+import { useSavingsStore } from '../../stores/savingsStore'
 import type { Gender } from '../../stores/savingsStore'
 import { monthsToTarget } from '../../engine/compound'
+import { PROJECTION_RATE } from '../../constants/gameBalances'
 
 const CONTRIBUTION_PRESETS = [25, 50, 100, 200]
 
@@ -25,8 +26,8 @@ export function OnboardingView() {
   // Without interest — pure savings duration
   const monthsWithoutInterest = Math.ceil(100_000 / monthlyContribution)
   const yearsWithoutInterest = Math.ceil(monthsWithoutInterest / 12)
-  // With baseline interest (2% Tagesgeld) — matches CompoundCurve projection
-  const monthsTo100K = monthsToTarget(0, monthlyContribution, BASELINE_RATE, 100_000)
+  // With PROJECTION_RATE (4%) — same rate used by CompoundCurve chart
+  const monthsTo100K = monthsToTarget(0, monthlyContribution, PROJECTION_RATE, 100_000)
   const yearsTo100K = Math.ceil(monthsTo100K / 12)
 
   return (
@@ -178,7 +179,7 @@ export function OnboardingView() {
               Ohne Zinsen: <span className="text-rpg-text">{yearsWithoutInterest} Jahre</span>
             </p>
             <p className="font-pixel text-[8px] text-rpg-muted">
-              Mit {(BASELINE_RATE * 100).toFixed(0)}% Zinsen: <span className="text-gold">{yearsTo100K} Jahre</span> — Zinseszins spart dir <span className="text-xp-green">{yearsWithoutInterest - yearsTo100K} Jahre</span>!
+              Mit {(PROJECTION_RATE * 100).toFixed(0)}% Zinsen: <span className="text-gold">{yearsTo100K} Jahre</span> — Zinseszins spart dir <span className="text-xp-green">{yearsWithoutInterest - yearsTo100K} Jahre</span>!
             </p>
           </div>
 

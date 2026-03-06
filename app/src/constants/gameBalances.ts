@@ -33,7 +33,11 @@ export const MAX_MERC_LEVEL = 10             // Maximum merc upgrade level
 export const MERC_DPS_PER_LEVEL = 0.15       // +15% base DPS per upgrade level
 export const MERC_ABILITY_PER_LEVEL = 0.10   // +10% ability value per upgrade level
 
-// ── Savings / Onboarding ──
+// ── Savings / Projection ──
+// PROJECTION_RATE: default rate shown in onboarding pitch AND compound curve chart
+// when no products are active. Represents realistic long-term blended return (4%).
+// Cross-file contract: OnboardingView + CompoundCurve both import this.
+export const PROJECTION_RATE = 0.04
 export const AGE_MIN = 14
 export const AGE_MAX = 65
 export const MONTHLY_CONTRIBUTION_MIN = 25

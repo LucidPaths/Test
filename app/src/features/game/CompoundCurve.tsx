@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { useSavingsStore, getBlendedRate } from '../../stores/savingsStore'
 import { projectBalance, monthsToTarget } from '../../engine/compound'
+import { PROJECTION_RATE } from '../../constants/gameBalances'
 
 export function CompoundCurve() {
   const balance = useSavingsStore((s) => s.balance)
@@ -16,15 +17,12 @@ export function CompoundCurve() {
   const products = useSavingsStore((s) => s.products)
   const [expanded, setExpanded] = useState(true)
 
-  // Chart projection rate: use blended product rate if products are active,
-  // otherwise default to 4% (realistic long-term blended return for the pitch).
-  // This is intentionally different from the game simulation's 2% Tagesgeld baseline —
-  // the chart shows what's achievable with disciplined investing, not just a savings account.
-  const CHART_DEFAULT_RATE = 0.04
+  // Projection rate: use blended product rate if products are active,
+  // otherwise PROJECTION_RATE from gameBalances (single source of truth).
+  // Same rate used by OnboardingView — pitch and chart always agree.
   const annualRate = useMemo(() => {
-    const blended = getBlendedRate(products)
     const hasActiveProducts = products.some((p) => p.active)
-    return hasActiveProducts ? blended : CHART_DEFAULT_RATE
+    return hasActiveProducts ? getBlendedRate(products) : PROJECTION_RATE
   }, [products])
 
   // Project the FULL journey from 0 to 100K so sliders have visible effect

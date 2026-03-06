@@ -52,7 +52,7 @@ Complexity is a cost, not a feature. Three clear lines beat one clever abstracti
 - **Recharts for compound curve** — battle-tested charting library instead of hand-rolled SVG/canvas. `<AreaChart>` does exactly what we need.
 - **CSS scroll-snap for video feed** — no scroll library dependency. Native `scroll-snap-type: y mandatory` + `IntersectionObserver` handles the TikTok-style feed.
 - **Ref-based RAF loop** — stores combat values in a ref, reads inside a stable `requestAnimationFrame` callback. Avoids dependency array churn without complex memoization.
-- **`BASELINE_RATE` exported const** — single number imported where needed instead of a config system or env var for a hackathon prototype.
+- **Rate constants as exported consts** — `BASELINE_RATE` (2% simulation) in savingsStore, `PROJECTION_RATE` (4% pitch/chart) in gameBalances. Imported where needed instead of a config system or env var for a hackathon prototype.
 
 **Demands:**
 - Before writing a new system, search for existing solutions first
@@ -94,7 +94,7 @@ This applies to architecture too. If a design keeps producing the same class of 
 - **Store mutation pattern** — found Taverne mutating gameStore directly. Grepped for `setState` in all village components, found same issue in Schmiede. Fixed both by adding `spendTokens()` and `upgradeItem()` store actions.
 - **Nested scroll pattern** — user reported 3 scrollbars. Audited all components for `overflow-y-auto`, found 5 instances (VideoFeed, PortfolioView, EquipmentPanel, Schmiede, MilestoneTrack). Removed all, established single-scroll architecture. Added Trap #14 to prevent recurrence.
 - **`buffStat` type safety** — found loose `string` type with unsafe `as` cast in buffs.ts. Tightened to union type in `FinancialProduct.buffStat`, which made the cast unnecessary and prevents invalid stat names at compile time.
-- **`BASELINE_RATE` duplication** — same 0.02 hardcoded in savingsStore and OnboardingView. Exported const from savingsStore, imported in OnboardingView. Added to cross-file contracts table.
+- **Projection rate divergence** — OnboardingView pitched 2% (BASELINE_RATE) while CompoundCurve showed 4% (hardcoded local const). Created `PROJECTION_RATE` in gameBalances.ts as single source of truth. Both now import from the same place. Added to cross-file contracts table.
 
 **Demands:**
 - Every bug fix includes a search for the same pattern across the codebase
