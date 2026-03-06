@@ -4,7 +4,7 @@ import { useEquipmentStore, getGearBonuses } from '../../stores/equipmentStore'
 import { usePetStore } from '../../stores/petStore'
 import { useMercenaryStore } from '../../stores/mercenaryStore'
 import { getDPS, getCritChance, getDefense } from '../../engine/progression'
-import { getPartyBonuses, getTotalPartyDPS } from '../../engine/mercenaries'
+import { getPartyBonuses, getTotalPartyDPS, getScaledMercDPS } from '../../engine/mercenaries'
 import { getPetById } from '../../data/pets'
 import { getMercById } from '../../data/mercenaries'
 import { getPetBonusValue, getPetDisplayName, getPetDisplayEmoji } from '../../engine/pets'
@@ -21,12 +21,13 @@ export function CharacterPanel() {
   const equippedPetId = usePetStore((s) => s.equippedPetId)
   const petStates = usePetStore((s) => s.petStates)
   const partySlots = useMercenaryStore((s) => s.partySlots)
+  const mercLevels = useMercenaryStore((s) => s.mercLevels)
 
   const gear = getGearBonuses(equipped)
   const dps = getDPS(char, gear.attack)
   const crit = getCritChance(char, gear.critChance)
   const def = getDefense(char)
-  const partyBonuses = getPartyBonuses(partySlots)
+  const partyBonuses = getPartyBonuses(partySlots, mercLevels)
   const totalDPS = getTotalPartyDPS(dps, partyBonuses)
 
   const equippedPet = equippedPetId ? getPetById(equippedPetId) : null
@@ -97,14 +98,15 @@ export function CharacterPanel() {
             {activeMercs.map((mercId) => {
               const merc = getMercById(mercId, gender)
               if (!merc) return null
+              const lvl = mercLevels[mercId] ?? 1
               return (
                 <div key={mercId} className="flex items-center gap-2 bg-rpg-bg/50 rounded-lg px-2 py-1.5 border border-rpg-border/30">
                   <span className="text-xl">{merc.emoji}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-pixel text-[7px] text-rpg-text">{merc.name}</div>
+                    <div className="font-pixel text-[7px] text-rpg-text">{merc.name} <span className="text-rpg-muted">Lv.{lvl}</span></div>
                     <div className="font-pixel text-[5px] text-rpg-muted">{merc.specialAbility.emoji} {merc.specialAbility.description}</div>
                   </div>
-                  <span className="font-pixel text-[6px] text-green-400">DPS {merc.baseDPS}</span>
+                  <span className="font-pixel text-[6px] text-green-400">DPS {getScaledMercDPS(merc, lvl)}</span>
                 </div>
               )
             })}

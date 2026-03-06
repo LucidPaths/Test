@@ -3,7 +3,7 @@ import type { ZoneDef, ZoneEnemy, EnemyTrait } from '../types/zone'
 import type { ActiveSpellBuff, ActiveDoT } from '../types/spell'
 import { getEncounterEnemy } from './zones'
 import { isSpellReady, applySpellEffect } from './spells'
-import { getPartyBonuses } from './mercenaries'
+
 import { rollLootDrop, rollBossLoot } from './loot'
 import { getPetBonusValue } from './pets'
 import { getPetById } from '../data/pets'
