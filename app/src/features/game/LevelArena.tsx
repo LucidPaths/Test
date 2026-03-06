@@ -15,7 +15,8 @@ import { getPetBonusValue } from '../../engine/pets'
 import { applyTraitModifiers, getEffectiveCritChance, getRegenAmount } from '../../engine/combat'
 import { RARITY_CONFIG, type Rarity } from '../../types/equipment'
 import { TRAIT_ICONS } from '../../types/zone'
-import { ATTACK_INTERVAL_MS } from '../../constants/gameBalances'
+import { ATTACK_INTERVAL_MS, CHARACTER_INFO } from '../../constants/gameBalances'
+import { useSavingsStore } from '../../stores/savingsStore'
 import { ZONES, getZoneById } from '../../data/zones'
 import { getSpellById } from '../../data/spells'
 import { getPetById } from '../../data/pets'
@@ -38,6 +39,7 @@ export function LevelArena() {
   const zoneProgress = useEquipmentStore((s) => s.zoneProgress)
 
   const char = useCharacterStore()
+  const gender = useSavingsStore((s) => s.gender)
   const partySlots = useMercenaryStore((s) => s.partySlots)
   const equippedPetId = usePetStore((s) => s.equippedPetId)
   const petStates = usePetStore((s) => s.petStates)
@@ -199,6 +201,11 @@ export function LevelArena() {
                 setTimeout(() => setLastDrop(null), 2000)
               }
               useEquipmentStore.getState().markZoneCleared()
+
+              // Unlock spell/pet/merc from this zone immediately
+              if (curZone.spellUnlock) useSpellStore.getState().unlockSpell(curZone.spellUnlock)
+              if (curZone.petUnlock) usePetStore.getState().unlockPet(curZone.petUnlock)
+              // Merc unlocks are handled by Kaserne (requires recruit action)
             } else {
               const drop = rollLootDrop(curEncounter + curZone.unlockMonth * 5, currentPity)
               if (drop) {
@@ -297,7 +304,7 @@ export function LevelArena() {
       {/* Combat area */}
       <div className="flex items-center justify-center gap-4 py-3">
         <div className="flex flex-col items-center">
-          <div className="text-3xl animate-idle-bob">🧙</div>
+          <div className="text-3xl animate-idle-bob">{CHARACTER_INFO[gender].emoji}</div>
           <span className="font-pixel text-[6px] text-rpg-muted mt-1">DPS {dps}</span>
         </div>
 

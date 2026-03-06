@@ -6,13 +6,16 @@ import { useMercenaryStore } from '../../stores/mercenaryStore'
 import { getDPS, getCritChance, getDefense } from '../../engine/progression'
 import { getPartyBonuses, getTotalPartyDPS } from '../../engine/mercenaries'
 import { getPetById } from '../../data/pets'
+import { getMercById } from '../../data/mercenaries'
 import { getPetBonusValue, getPetDisplayName, getPetDisplayEmoji } from '../../engine/pets'
+import { CHARACTER_INFO } from '../../constants/gameBalances'
 import { HealthBar } from '../../components/HealthBar'
 import { StatBadge } from '../../components/StatBadge'
 
 export function CharacterPanel() {
   const char = useCharacterStore()
   const simulatedMonths = useSavingsStore((s) => s.simulatedMonths)
+  const gender = useSavingsStore((s) => s.gender)
   const equipped = useEquipmentStore((s) => s.equipped)
   const stage = useEquipmentStore((s) => s.stage)
   const equippedPetId = usePetStore((s) => s.equippedPetId)
@@ -29,21 +32,24 @@ export function CharacterPanel() {
   const equippedPet = equippedPetId ? getPetById(equippedPetId) : null
   const equippedPetState = equippedPetId ? petStates[equippedPetId] : null
 
+  const charInfo = CHARACTER_INFO[gender]
   const simYears = Math.floor(simulatedMonths / 12)
   const simMonths = simulatedMonths % 12
+
+  const activeMercs = partySlots.filter((id): id is string => id !== null)
 
   return (
     <div className="bg-rpg-panel border border-rpg-border rounded-lg p-3">
       <div className="flex items-center gap-3 mb-3">
         <div className="relative">
-          <div className="text-3xl animate-idle-bob">🧙</div>
+          <div className="text-3xl animate-idle-bob">{charInfo.emoji}</div>
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-rpg-bg border border-rpg-border rounded px-1">
             <span className="font-pixel text-[6px] text-gold">Lv.{char.level}</span>
           </div>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <span className="font-pixel text-[9px] text-rpg-text">Sparritter</span>
+            <span className="font-pixel text-[9px] text-rpg-text">{charInfo.name}</span>
             <span className="font-pixel text-[7px] text-rpg-muted">
               {simYears > 0 ? `${simYears}J ${simMonths}M` : `${simMonths}M`} | Stufe {stage}
             </span>
@@ -67,6 +73,26 @@ export function CharacterPanel() {
           <StatBadge label="PARTY" value={totalDPS} icon="👥" />
         )}
       </div>
+
+      {/* Gruppe (Party) display */}
+      {activeMercs.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-rpg-border/30">
+          <span className="font-pixel text-[6px] text-rpg-muted">Gruppe</span>
+          <div className="flex gap-1.5 mt-1">
+            {activeMercs.map((mercId) => {
+              const merc = getMercById(mercId, gender)
+              if (!merc) return null
+              return (
+                <div key={mercId} className="flex items-center gap-1 bg-rpg-bg rounded px-1.5 py-0.5 border border-rpg-border/50">
+                  <span className="text-sm">{merc.emoji}</span>
+                  <span className="font-pixel text-[5px] text-rpg-text">{merc.name}</span>
+                  <span className="font-pixel text-[5px] text-green-400">DPS {merc.baseDPS}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Pet info */}
       {equippedPet && equippedPetState && (

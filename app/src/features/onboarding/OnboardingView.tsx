@@ -1,13 +1,21 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useSavingsStore, BASELINE_RATE } from '../../stores/savingsStore'
+import type { Gender } from '../../stores/savingsStore'
 import { monthsToTarget } from '../../engine/compound'
 
 const CONTRIBUTION_PRESETS = [25, 50, 100, 200]
 
+const CHARACTER_OPTIONS: { gender: Gender; name: string; emoji: string; description: string }[] = [
+  { gender: 'male', name: 'Sparritter', emoji: '🧙', description: 'Stärke und Disziplin — der Weg des Kriegers.' },
+  { gender: 'female', name: 'Sparmagierin', emoji: '🧙‍♀️', description: 'Weisheit und Magie — der Weg der Magierin.' },
+]
+
 export function OnboardingView() {
   const age = useSavingsStore((s) => s.age)
+  const gender = useSavingsStore((s) => s.gender)
   const setAge = useSavingsStore((s) => s.setAge)
+  const setGender = useSavingsStore((s) => s.setGender)
   const monthlyContribution = useSavingsStore((s) => s.monthlyContribution)
   const setMonthlyContribution = useSavingsStore((s) => s.setMonthlyContribution)
   const startGame = useSavingsStore((s) => s.startGame)
@@ -62,6 +70,45 @@ export function OnboardingView() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center gap-5 max-w-sm w-full"
         >
+          <h2 className="font-pixel text-[10px] text-gold">Wähle deinen Charakter</h2>
+          <p className="text-xs text-rpg-muted">
+            Dein Gefährte wartet im ersten Dungeon auf dich.
+          </p>
+
+          <div className="flex gap-3 w-full">
+            {CHARACTER_OPTIONS.map((opt) => (
+              <button
+                key={opt.gender}
+                onClick={() => setGender(opt.gender)}
+                className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-lg border transition-all cursor-pointer ${
+                  gender === opt.gender
+                    ? 'bg-gold/20 border-gold'
+                    : 'bg-rpg-panel border-rpg-border hover:border-gold/40'
+                }`}
+              >
+                <span className="text-4xl">{opt.emoji}</span>
+                <span className="font-pixel text-[8px] text-rpg-text">{opt.name}</span>
+                <span className="font-pixel text-[5px] text-rpg-muted leading-relaxed">{opt.description}</span>
+              </button>
+            ))}
+          </div>
+
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setStep(2)}
+            className="w-full py-3 bg-gold/20 border border-gold/50 rounded-lg font-pixel text-[10px] text-gold cursor-pointer hover:bg-gold/30 transition-colors"
+          >
+            Weiter →
+          </motion.button>
+        </motion.div>
+      )}
+
+      {step === 2 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-5 max-w-sm w-full"
+        >
           <div className="text-4xl">🎂</div>
           <h2 className="font-pixel text-[10px] text-gold">Wie alt bist du?</h2>
           <p className="text-xs text-rpg-muted">
@@ -86,7 +133,7 @@ export function OnboardingView() {
 
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setStep(2)}
+            onClick={() => setStep(3)}
             className="w-full py-3 bg-gold/20 border border-gold/50 rounded-lg font-pixel text-[10px] text-gold cursor-pointer hover:bg-gold/30 transition-colors"
           >
             Weiter →
@@ -94,7 +141,7 @@ export function OnboardingView() {
         </motion.div>
       )}
 
-      {step === 2 && (
+      {step === 3 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

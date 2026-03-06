@@ -1,11 +1,47 @@
 import type { Mercenary } from '../types/mercenary'
+import type { Gender } from '../stores/savingsStore'
 
 /**
- * 6 mercenaries unlocked by clearing zones 1, 2, 4, 6, 8, 10.
+ * 7 mercenaries unlocked by clearing zones 0, 1, 2, 4, 6, 8, 10.
+ * The starter merc (zone-0) is the unchosen gender character.
  * Equal partners: mercs deal real DPS alongside the player.
  * Cross-file contract: merc IDs referenced by zones.ts mercenaryUnlock field.
  */
+
+/** Starter merc definition depends on player gender — unchosen gender becomes the first companion */
+const STARTER_MERC_VARIANTS: Record<Gender, Omit<Mercenary, 'id' | 'unlockZoneId' | 'recruitCost'>> = {
+  // If player chose male (Sparritter), unchosen is female (Sparmagierin)
+  male: {
+    name: 'Sparmagierin',
+    emoji: '🧙‍♀️',
+    description: 'Deine erste Gefährtin — Magie des Zinseszins.',
+    baseDPS: 5,
+    critChance: 0.05,
+    specialAbility: { name: 'Zins-Aura', emoji: '✨', description: '+1 Mana-Regeneration', type: 'manaRegen', value: 1 },
+    financialLesson: 'Zusammen spart es sich leichter als allein.',
+  },
+  // If player chose female (Sparmagierin), unchosen is male (Sparritter)
+  female: {
+    name: 'Sparritter',
+    emoji: '🧙',
+    description: 'Dein erster Gefährte — Stärke der Disziplin.',
+    baseDPS: 5,
+    critChance: 0.05,
+    specialAbility: { name: 'Disziplin-Stoß', emoji: '⚔️', description: '+10% Gruppen-DPS', type: 'percentDPS', value: 0.10 },
+    financialLesson: 'Zusammen spart es sich leichter als allein.',
+  },
+}
+
+/** Get the starter merc for a given player gender */
+export function getStarterMerc(playerGender: Gender): Mercenary {
+  const variant = STARTER_MERC_VARIANTS[playerGender]
+  return { id: 'starter-gefaehrte', unlockZoneId: 'zone-0', recruitCost: 0, ...variant }
+}
+
 export const MERCENARIES: Mercenary[] = [
+  // Starter merc placeholder — actual data resolved via getStarterMerc(gender)
+  // This entry is used for iteration; display properties are overridden at runtime
+  { id: 'starter-gefaehrte', name: 'Gefährte', emoji: '👤', description: 'Dein erster Verbündeter.', unlockZoneId: 'zone-0', recruitCost: 0, baseDPS: 5, critChance: 0.05, specialAbility: { name: 'Gefährten-Kraft', emoji: '👥', description: 'Grundbonus', type: 'percentDPS', value: 0.10 }, financialLesson: 'Zusammen spart es sich leichter als allein.' },
   {
     id: 'steuer-beraterin',
     name: 'Steuer-Beraterin',
@@ -116,6 +152,13 @@ export const MERCENARIES: Mercenary[] = [
   },
 ]
 
-export function getMercById(id: string): Mercenary | undefined {
+/**
+ * Get merc by ID. For the starter merc, pass playerGender to resolve the correct variant.
+ * Falls back to the generic placeholder if gender is not provided.
+ */
+export function getMercById(id: string, playerGender?: Gender): Mercenary | undefined {
+  if (id === 'starter-gefaehrte' && playerGender) {
+    return getStarterMerc(playerGender)
+  }
   return MERCENARIES.find((m) => m.id === id)
 }

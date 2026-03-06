@@ -1,5 +1,5 @@
 import type { Mercenary } from '../types/mercenary'
-import { MERCENARIES } from '../data/mercenaries'
+import { MERCENARIES, getMercById } from '../data/mercenaries'
 
 export interface PartyBonuses {
   totalMercDPS: number
@@ -26,7 +26,7 @@ export function getPartyBonuses(partySlots: (string | null)[]): PartyBonuses {
 
   for (const mercId of partySlots) {
     if (!mercId) continue
-    const merc = MERCENARIES.find((m) => m.id === mercId)
+    const merc = getMercById(mercId)
     if (!merc) continue
 
     result.totalMercDPS += merc.baseDPS
@@ -70,7 +70,7 @@ export function rollMercDamage(partySlots: (string | null)[]): number {
   let total = 0
   for (const mercId of partySlots) {
     if (!mercId) continue
-    const merc = MERCENARIES.find((m) => m.id === mercId)
+    const merc = getMercById(mercId)
     if (!merc) continue
     const isCrit = Math.random() < merc.critChance
     total += isCrit ? Math.floor(merc.baseDPS * 2) : merc.baseDPS

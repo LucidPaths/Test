@@ -28,6 +28,8 @@ export const usePetStore = create<PetStore>()(
           return {
             unlockedPetIds: [...s.unlockedPetIds, id],
             petStates: { ...s.petStates, [id]: { level: 1, xp: 0 } },
+            // Auto-equip first pet
+            equippedPetId: s.equippedPetId ?? id,
           }
         }),
 

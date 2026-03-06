@@ -28,9 +28,15 @@ export const useSpellStore = create<SpellStore>()(
       autoCast: true,
 
       unlockSpell: (id) =>
-        set((s) => ({
-          unlockedSpellIds: s.unlockedSpellIds.includes(id) ? s.unlockedSpellIds : [...s.unlockedSpellIds, id],
-        })),
+        set((s) => {
+          if (s.unlockedSpellIds.includes(id)) return s
+          const newUnlocked = [...s.unlockedSpellIds, id]
+          // Auto-equip if there's a free slot
+          const newEquipped = s.equippedSpellIds.length < MAX_EQUIPPED_SPELLS
+            ? [...s.equippedSpellIds, id]
+            : s.equippedSpellIds
+          return { unlockedSpellIds: newUnlocked, equippedSpellIds: newEquipped }
+        }),
 
       equipSpell: (id) =>
         set((s) => {
