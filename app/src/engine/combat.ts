@@ -1,13 +1,4 @@
-import type { Enemy } from '../types/game'
 import type { ZoneDef, ZoneEnemy, EnemyTrait } from '../types/zone'
-import type { ActiveSpellBuff, ActiveDoT } from '../types/spell'
-import { getEncounterEnemy } from './zones'
-import { isSpellReady, applySpellEffect } from './spells'
-
-import { rollLootDrop, rollBossLoot } from './loot'
-import { getPetBonusValue } from './pets'
-import { getPetById } from '../data/pets'
-import { getSpellById } from '../data/spells'
 
 // ── Trait constants (single source of truth for trait mechanics) ──
 

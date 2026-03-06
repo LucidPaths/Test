@@ -155,6 +155,7 @@ export const useEquipmentStore = create<EquipmentStore>()(
         set((s) => {
           const zoneId = s.currentZoneId
           const prev = s.zoneProgress[zoneId] ?? createDefaultZoneProgress()
+          const totalEncounters = s.encounterSequence.length
           return {
             zoneProgress: {
               ...s.zoneProgress,
@@ -163,8 +164,8 @@ export const useEquipmentStore = create<EquipmentStore>()(
                 cleared: true,
                 bossDefeated: true,
                 timesCleared: prev.timesCleared + 1,
-                encountersDefeated: 10,
-                bestRun: 10,
+                encountersDefeated: totalEncounters,
+                bestRun: Math.max(prev.bestRun, totalEncounters),
               },
             },
           }

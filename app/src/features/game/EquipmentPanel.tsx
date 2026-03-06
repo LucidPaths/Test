@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEquipmentStore, getGearBonuses } from '../../stores/equipmentStore'
 import type { GearItem, EquipSlot } from '../../types/equipment'
 import { RARITY_CONFIG, SLOT_LABELS } from '../../types/equipment'
+import { INVENTORY_CAP } from '../../constants/gameBalances'
 
 const SLOTS: EquipSlot[] = ['weapon', 'armor', 'accessory', 'rune']
 
@@ -84,7 +85,7 @@ export function EquipmentPanel() {
         onClick={() => setShowInventory(!showInventory)}
         className="w-full font-pixel text-[7px] text-rpg-muted py-1 cursor-pointer hover:text-gold transition-colors"
       >
-        {showInventory ? '▲ Inventar schließen' : `▼ Inventar öffnen (${inventory.length}/50)`}
+        {showInventory ? '▲ Inventar schließen' : `▼ Inventar öffnen (${inventory.length}/${INVENTORY_CAP})`}
       </button>
 
       {/* Inventory dropdown */}
