@@ -22,6 +22,10 @@ export function OnboardingView() {
 
   const [step, setStep] = useState(0)
 
+  // Without interest — pure savings duration
+  const monthsWithoutInterest = Math.ceil(100_000 / monthlyContribution)
+  const yearsWithoutInterest = Math.ceil(monthsWithoutInterest / 12)
+  // With baseline interest (2% Tagesgeld) — matches CompoundCurve projection
   const monthsTo100K = monthsToTarget(0, monthlyContribution, BASELINE_RATE, 100_000)
   const yearsTo100K = Math.ceil(monthsTo100K / 12)
 
@@ -169,10 +173,12 @@ export function OnboardingView() {
             ))}
           </div>
 
-          <div className="bg-rpg-panel border border-rpg-border rounded-lg p-3 w-full">
+          <div className="bg-rpg-panel border border-rpg-border rounded-lg p-3 w-full space-y-1">
             <p className="font-pixel text-[8px] text-rpg-muted">
-              Mit €{monthlyContribution}/Monat erreichst du 100K in ca. <span className="text-gold">{yearsTo100K} Jahren</span> —
-              mit Zinsen sogar schneller!
+              Ohne Zinsen: <span className="text-rpg-text">{yearsWithoutInterest} Jahre</span>
+            </p>
+            <p className="font-pixel text-[8px] text-rpg-muted">
+              Mit {(BASELINE_RATE * 100).toFixed(0)}% Zinsen: <span className="text-gold">{yearsTo100K} Jahre</span> — Zinseszins spart dir <span className="text-xp-green">{yearsWithoutInterest - yearsTo100K} Jahre</span>!
             </p>
           </div>
 

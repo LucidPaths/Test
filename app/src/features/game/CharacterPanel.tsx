@@ -74,26 +74,6 @@ export function CharacterPanel() {
         )}
       </div>
 
-      {/* Gruppe (Party) display */}
-      {activeMercs.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-rpg-border/30">
-          <span className="font-pixel text-[6px] text-rpg-muted">Gruppe</span>
-          <div className="flex gap-1.5 mt-1">
-            {activeMercs.map((mercId) => {
-              const merc = getMercById(mercId, gender)
-              if (!merc) return null
-              return (
-                <div key={mercId} className="flex items-center gap-1 bg-rpg-bg rounded px-1.5 py-0.5 border border-rpg-border/50">
-                  <span className="text-sm">{merc.emoji}</span>
-                  <span className="font-pixel text-[5px] text-rpg-text">{merc.name}</span>
-                  <span className="font-pixel text-[5px] text-green-400">DPS {merc.baseDPS}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Pet info */}
       {equippedPet && equippedPetState && (
         <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-rpg-border/30">
@@ -106,6 +86,29 @@ export function CharacterPanel() {
               ? `${Math.round(getPetBonusValue(equippedPet, equippedPetState) * 100)}%`
               : getPetBonusValue(equippedPet, equippedPetState)} {equippedPet.passiveBonus.stat}
           </span>
+        </div>
+      )}
+
+      {/* Gruppe (Party) — mercenaries under player character */}
+      {activeMercs.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-rpg-border/30">
+          <span className="font-pixel text-[7px] text-rpg-muted">Gruppe</span>
+          <div className="flex flex-col gap-1 mt-1">
+            {activeMercs.map((mercId) => {
+              const merc = getMercById(mercId, gender)
+              if (!merc) return null
+              return (
+                <div key={mercId} className="flex items-center gap-2 bg-rpg-bg/50 rounded-lg px-2 py-1.5 border border-rpg-border/30">
+                  <span className="text-xl">{merc.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-pixel text-[7px] text-rpg-text">{merc.name}</div>
+                    <div className="font-pixel text-[5px] text-rpg-muted">{merc.specialAbility.emoji} {merc.specialAbility.description}</div>
+                  </div>
+                  <span className="font-pixel text-[6px] text-green-400">DPS {merc.baseDPS}</span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

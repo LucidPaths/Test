@@ -20,6 +20,7 @@ import { useSavingsStore } from '../../stores/savingsStore'
 import { ZONES, getZoneById } from '../../data/zones'
 import { getSpellById } from '../../data/spells'
 import { getPetById } from '../../data/pets'
+import { getMercById } from '../../data/mercenaries'
 import { HealthBar } from '../../components/HealthBar'
 import { SpellBar } from './SpellBar'
 
@@ -48,6 +49,7 @@ export function LevelArena() {
   const [bossIntro, setBossIntro] = useState(false)
 
   const zone = getZoneById(currentZoneId) ?? ZONES[0]
+  const activeMercs = partySlots.filter((id): id is string => id !== null)
 
   const gear = getGearBonuses(equipped)
   const partyBonuses = getPartyBonuses(partySlots)
@@ -303,9 +305,35 @@ export function LevelArena() {
 
       {/* Combat area */}
       <div className="flex items-center justify-center gap-4 py-3">
-        <div className="flex flex-col items-center">
+        {/* Player + party side */}
+        <div className="flex flex-col items-center gap-1">
           <div className="text-3xl animate-idle-bob">{CHARACTER_INFO[gender].emoji}</div>
-          <span className="font-pixel text-[6px] text-rpg-muted mt-1">DPS {dps}</span>
+          <span className="font-pixel text-[6px] text-rpg-muted">DPS {dps}</span>
+          {/* Party members (mercs + pet) */}
+          {(activeMercs.length > 0 || equippedPetId) && (
+            <div className="flex gap-1 mt-0.5">
+              {activeMercs.map((mercId) => {
+                const merc = getMercById(mercId, gender)
+                return merc ? (
+                  <span key={mercId} className="text-base animate-idle-bob" title={merc.name} style={{ animationDelay: '0.2s' }}>
+                    {merc.emoji}
+                  </span>
+                ) : null
+              })}
+              {equippedPetId && (() => {
+                const pet = getPetById(equippedPetId)
+                const petState = petStates[equippedPetId]
+                if (!pet || !petState) return null
+                // Inline evolution check
+                const evo = [...pet.evolution].reverse().find(e => petState.level >= e.level)
+                return (
+                  <span key="pet" className="text-sm animate-idle-bob" title={pet.name} style={{ animationDelay: '0.4s' }}>
+                    {evo?.emoji ?? pet.emoji}
+                  </span>
+                )
+              })()}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col items-center gap-1">

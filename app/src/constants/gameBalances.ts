@@ -16,10 +16,15 @@ export const INITIAL_MAX_MANA = 50
 export const MAX_EQUIPPED_SPELLS = 3
 
 // ── Party ──
-export const BASE_PARTY_SLOTS = 2
-export const MAX_PARTY_SLOTS = 4
-export const PARTY_SLOT_3_ZONE = 'zone-2'  // 3rd slot unlocks when zone-2 cleared (free)
-export const PARTY_SLOT_4_ZONE = 'zone-4'  // 4th slot unlocks when zone-4 cleared + €5 micro-investment
+export const BASE_PARTY_SLOTS = 1           // 1 slot unlocked by default
+export const MAX_PARTY_SLOTS = 5            // Maximum party size
+// Slot 2: free — unlocks after first vesting (simulatedMonths >= 1)
+// Slots 3-5: paid via micro-investment
+export const PARTY_SLOT_COSTS: Record<number, number> = {
+  3: 5,   // €5
+  4: 10,  // €10
+  5: 20,  // €20
+}
 
 // ── Savings / Onboarding ──
 export const AGE_MIN = 14

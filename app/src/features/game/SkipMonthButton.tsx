@@ -6,6 +6,7 @@ import { useEquipmentStore } from '../../stores/equipmentStore'
 import { useGameStore } from '../../stores/gameStore'
 import { useSpellStore } from '../../stores/spellStore'
 import { usePetStore } from '../../stores/petStore'
+import { useMercenaryStore } from '../../stores/mercenaryStore'
 import { ZONES } from '../../data/zones'
 import { isZoneUnlocked, getEncounterEnemy } from '../../engine/zones'
 
@@ -56,6 +57,12 @@ export function SkipMonthButton() {
       if (zone.petUnlock) usePetStore.getState().unlockPet(zone.petUnlock)
     }
 
+    // 4b. Auto-unlock party slot 2 on first vesting
+    const mercState = useMercenaryStore.getState()
+    if (mercState.unlockedSlots === 1 && newMonths >= 1) {
+      useMercenaryStore.getState().unlockPartySlot()
+    }
+
     // 5. Prestige: reset encounter, keep zone progress, clear non-legendary gear
     prestigeReset()
 
@@ -99,29 +106,29 @@ export function SkipMonthButton() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.5, type: 'spring' }}
-            className="absolute inset-0 z-30 flex items-center justify-center bg-rpg-bg/90 rounded-lg border-2 border-gold"
+            className="absolute inset-0 z-30 flex items-center justify-center bg-rpg-bg rounded-lg border-2 border-gold overflow-hidden px-2"
           >
-            <div className="text-center">
+            <div className="text-center max-w-full">
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.2, 1] }}
                 transition={{ duration: 0.6 }}
-                className="text-4xl mb-2"
+                className="text-3xl mb-1"
               >
                 {newZone ? '🗺️' : '✨'}
               </motion.div>
-              <div className="font-pixel text-[10px] text-gold">
+              <div className="font-pixel text-[9px] text-gold truncate">
                 {newZone ? 'NEUE ZONE!' : 'AUFSTIEG!'}
               </div>
               {newZone && (
-                <div className="font-pixel text-[8px] text-green-400 mt-1">
+                <div className="font-pixel text-[7px] text-green-400 mt-0.5 truncate">
                   {newZone} freigeschaltet!
                 </div>
               )}
-              <div className="font-pixel text-[7px] text-rpg-muted mt-1">
+              <div className="font-pixel text-[6px] text-rpg-muted mt-0.5">
                 +€{monthlyContribution} investiert
               </div>
-              <div className="font-pixel text-[7px] text-rpg-accent mt-0.5">
-                Lv.{prestigeLevel} — Begegnung zurückgesetzt
+              <div className="font-pixel text-[6px] text-rpg-accent mt-0.5">
+                Lv.{prestigeLevel} — Reset
               </div>
             </div>
           </motion.div>
