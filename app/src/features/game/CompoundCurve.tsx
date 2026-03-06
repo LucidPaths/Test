@@ -181,7 +181,6 @@ export function CompoundCurve() {
             <div className="font-pixel text-[8px] text-center space-y-0.5">
               <div className="text-gold">
                 100K mit {targetAge} Jahren
-                {targetMonthsRemain > 0 && ` + ${targetMonthsRemain}M`}
               </div>
               <div className="text-rpg-muted">
                 {(annualRate * 100).toFixed(1)}% p.a.
