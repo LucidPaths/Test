@@ -44,6 +44,7 @@ export function LevelArena() {
   const char = useCharacterStore()
   const gender = useSavingsStore((s) => s.gender)
   const partySlots = useMercenaryStore((s) => s.partySlots)
+  const mercLevels = useMercenaryStore((s) => s.mercLevels)
   const equippedPetId = usePetStore((s) => s.equippedPetId)
   const petStates = usePetStore((s) => s.petStates)
 
@@ -54,7 +55,7 @@ export function LevelArena() {
   const activeMercs = partySlots.filter((id): id is string => id !== null)
 
   const gear = getGearBonuses(equipped)
-  const partyBonuses = getPartyBonuses(partySlots)
+  const partyBonuses = getPartyBonuses(partySlots, mercLevels)
   const defense = getDefense(char) + gear.defense
 
   // Pet bonus
@@ -94,8 +95,8 @@ export function LevelArena() {
   }, [char.maxHp])
 
   // Stable ref for RAF callback
-  const combatRef = useRef({ dps, critChance, goldFind: totalGoldFind, encounter, zone, encounterSequence, partySlots, defense: totalDefense })
-  combatRef.current = { dps, critChance, goldFind: totalGoldFind, encounter, zone, encounterSequence, partySlots, defense: totalDefense }
+  const combatRef = useRef({ dps, critChance, goldFind: totalGoldFind, encounter, zone, encounterSequence, partySlots, mercLevels, defense: totalDefense })
+  combatRef.current = { dps, critChance, goldFind: totalGoldFind, encounter, zone, encounterSequence, partySlots, mercLevels, defense: totalDefense }
 
   const lastTickRef = useRef(performance.now())
   const accumRef = useRef(0)
@@ -119,7 +120,7 @@ export function LevelArena() {
         const {
           dps: curDps, critChance: curCrit, goldFind,
           encounter: curEncounter, zone: curZone, encounterSequence: curSeq,
-          partySlots: curParty, defense: curDefense,
+          partySlots: curParty, mercLevels: curMercLevels, defense: curDefense,
         } = combatRef.current
 
         const gameState = useGameStore.getState()
@@ -133,7 +134,7 @@ export function LevelArena() {
         }
 
         // --- Mana regen ---
-        const manaExtra = getPartyBonuses(curParty).manaRegenBonus
+        const manaExtra = getPartyBonuses(curParty, curMercLevels).manaRegenBonus
         useGameStore.getState().regenMana(1 + manaExtra)
 
         // --- Auto-cast spells ---
@@ -182,7 +183,7 @@ export function LevelArena() {
         }
 
         // --- Mercenary damage ---
-        const mercDmg = rollMercDamage(curParty)
+        const mercDmg = rollMercDamage(curParty, curMercLevels)
         const totalDmg = dmg + mercDmg
 
         // --- Enemy attacks player ---
@@ -195,12 +196,14 @@ export function LevelArena() {
           forceUpdate()
           setTimeout(() => { playerShakeRef.current = false; forceUpdate() }, 300)
 
-          // Respawn after 2 seconds, restart current encounter
+          // Respawn after 2 seconds, reset zone run back to encounter 1
           setTimeout(() => {
             useGameStore.getState().respawnPlayer()
+            useEquipmentStore.getState().selectZone(curZone.id)
+            const newSeq = useEquipmentStore.getState().encounterSequence
             const charLvl = useCharacterStore.getState().level
-            const respawnEnemy = getEncounterEnemy(curZone, curSeq, curEncounter)
-            useGameStore.getState().spawnEnemy(curZone, respawnEnemy, charLvl)
+            const firstEnemy = getEncounterEnemy(curZone, newSeq, 1)
+            useGameStore.getState().spawnEnemy(curZone, firstEnemy, charLvl)
           }, 2000)
         }
 
@@ -354,7 +357,7 @@ export function LevelArena() {
               <div className="text-4xl mb-2">💀</div>
               <div className="font-pixel text-[10px] text-rpg-accent">BESIEGT!</div>
               <div className="font-pixel text-[6px] text-rpg-muted mt-1">Wiederbelebung...</div>
-              <div className="font-pixel text-[5px] text-rpg-muted mt-0.5">-10% Tokens</div>
+              <div className="font-pixel text-[5px] text-rpg-muted mt-0.5">-10% Tokens — Neustart ab Gegner 1</div>
             </div>
           </motion.div>
         )}

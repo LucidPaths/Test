@@ -26,6 +26,13 @@ export const PARTY_SLOT_COSTS: Record<number, number> = {
   5: 20,  // €20
 }
 
+// ── Mercenary Upgrades ──
+export const MERC_UPGRADE_BASE_COST = 30     // Token cost for level 1→2
+export const MERC_UPGRADE_COST_SCALE = 1.5   // Each level costs 1.5× more
+export const MAX_MERC_LEVEL = 10             // Maximum merc upgrade level
+export const MERC_DPS_PER_LEVEL = 0.15       // +15% base DPS per upgrade level
+export const MERC_ABILITY_PER_LEVEL = 0.10   // +10% ability value per upgrade level
+
 // ── Savings / Onboarding ──
 export const AGE_MIN = 14
 export const AGE_MAX = 65

@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MERCENARIES, getMercById, getStarterMerc } from '../../data/mercenaries'
-import { useMercenaryStore } from '../../stores/mercenaryStore'
+import { useMercenaryStore, getMercUpgradeCost } from '../../stores/mercenaryStore'
 import { useGameStore } from '../../stores/gameStore'
-
 import { useSavingsStore } from '../../stores/savingsStore'
 import { getZoneById } from '../../data/zones'
 import { isZoneUnlocked } from '../../engine/zones'
-import { MAX_PARTY_SLOTS, PARTY_SLOT_COSTS } from '../../constants/gameBalances'
+import { getScaledMercDPS, getScaledAbilityValue } from '../../engine/mercenaries'
+import { MAX_PARTY_SLOTS, PARTY_SLOT_COSTS, MAX_MERC_LEVEL } from '../../constants/gameBalances'
 
 interface KaserneProps {
   onBack: () => void
@@ -17,6 +17,7 @@ export function Kaserne({ onBack }: KaserneProps) {
   const recruitedIds = useMercenaryStore((s) => s.recruitedIds)
   const partySlots = useMercenaryStore((s) => s.partySlots)
   const unlockedSlots = useMercenaryStore((s) => s.unlockedSlots)
+  const mercLevels = useMercenaryStore((s) => s.mercLevels)
   const combatTokens = useGameStore((s) => s.combatTokens)
   const gender = useSavingsStore((s) => s.gender)
   const simulatedMonths = useSavingsStore((s) => s.simulatedMonths)
@@ -31,6 +32,18 @@ export function Kaserne({ onBack }: KaserneProps) {
     const success = useMercenaryStore.getState().recruit(mercId, cost)
     if (success) {
       setResult(`✅ ${getMercById(mercId, gender)?.name} rekrutiert!`)
+    } else {
+      setResult('❌ Nicht genug Tokens!')
+    }
+    setTimeout(() => setResult(null), 2000)
+  }
+
+  const handleUpgrade = (mercId: string) => {
+    const success = useMercenaryStore.getState().upgradeMerc(mercId)
+    const merc = getMercById(mercId, gender)
+    if (success) {
+      const newLevel = (useMercenaryStore.getState().mercLevels[mercId] ?? 1)
+      setResult(`⬆️ ${merc?.name} → Lv.${newLevel}!`)
     } else {
       setResult('❌ Nicht genug Tokens!')
     }
@@ -76,7 +89,7 @@ export function Kaserne({ onBack }: KaserneProps) {
       </div>
 
       <p className="font-pixel text-[7px] text-rpg-muted text-center">
-        Rekrutiere Söldner für deine Gruppe. 🪙 {combatTokens}
+        Rekrutiere und verbessere Söldner. 🪙 {combatTokens}
       </p>
 
       {/* Party slots */}
@@ -85,14 +98,15 @@ export function Kaserne({ onBack }: KaserneProps) {
         <div className="flex gap-2 mt-1.5 flex-wrap">
           {partySlots.map((mercId, idx) => {
             const merc = mercId ? getMercById(mercId, gender) : null
+            const lvl = mercId ? (mercLevels[mercId] ?? 1) : 1
             return (
               <div key={idx} className="flex-1 flex items-center gap-1.5 p-2 rounded-lg border border-rpg-border bg-rpg-panel min-h-[48px] min-w-[120px]">
                 {merc ? (
                   <>
                     <span className="text-xl">{merc.emoji}</span>
                     <div className="flex-1">
-                      <div className="font-pixel text-[7px] text-rpg-text">{merc.name}</div>
-                      <div className="font-pixel text-[5px] text-green-400">DPS {merc.baseDPS}</div>
+                      <div className="font-pixel text-[7px] text-rpg-text">{merc.name} <span className="text-rpg-muted">Lv.{lvl}</span></div>
+                      <div className="font-pixel text-[5px] text-green-400">DPS {getScaledMercDPS(merc, lvl)}</div>
                     </div>
                     <button
                       onClick={() => handleRemoveFromParty(idx)}
@@ -161,6 +175,9 @@ export function Kaserne({ onBack }: KaserneProps) {
           const recruited = recruitedIds.includes(merc.id)
           const inParty = partySlots.includes(merc.id)
           const zone = getZoneById(merc.unlockZoneId)
+          const lvl = mercLevels[merc.id] ?? 1
+          const isMaxLevel = lvl >= MAX_MERC_LEVEL
+          const upgradeCost = getMercUpgradeCost(lvl)
 
           return (
             <div
@@ -172,10 +189,15 @@ export function Kaserne({ onBack }: KaserneProps) {
               <div className="flex items-center gap-2">
                 <span className={`text-2xl ${!unlocked ? 'grayscale' : ''}`}>{merc.emoji}</span>
                 <div className="flex-1">
-                  <div className="font-pixel text-[8px] text-rpg-text">{merc.name}</div>
+                  <div className="font-pixel text-[8px] text-rpg-text">
+                    {merc.name}
+                    {recruited && <span className="text-rpg-muted ml-1">Lv.{lvl}</span>}
+                  </div>
                   <div className="font-pixel text-[6px] text-rpg-muted">{merc.description}</div>
                   <div className="flex gap-2 mt-0.5">
-                    <span className="font-pixel text-[6px] text-green-400">DPS {merc.baseDPS}</span>
+                    <span className="font-pixel text-[6px] text-green-400">
+                      DPS {recruited ? getScaledMercDPS(merc, lvl) : merc.baseDPS}
+                    </span>
                     <span className="font-pixel text-[6px] text-blue-400">
                       {merc.specialAbility.emoji} {merc.specialAbility.description}
                     </span>
@@ -208,6 +230,27 @@ export function Kaserne({ onBack }: KaserneProps) {
                   <span className="font-pixel text-[7px] text-gold">⚔️ Aktiv</span>
                 )}
               </div>
+
+              {/* Upgrade button for recruited mercs */}
+              {recruited && !isMaxLevel && (
+                <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-rpg-border/30">
+                  <span className="font-pixel text-[6px] text-rpg-muted">
+                    Lv.{lvl} → Lv.{lvl + 1}: DPS {getScaledMercDPS(merc, lvl)} → {getScaledMercDPS(merc, lvl + 1)}
+                  </span>
+                  <button
+                    onClick={() => handleUpgrade(merc.id)}
+                    disabled={combatTokens < upgradeCost}
+                    className="font-pixel text-[6px] text-amber-400 border border-amber-400/30 rounded px-2 py-0.5 cursor-pointer hover:bg-amber-400/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    ⬆️ 🪙 {upgradeCost}
+                  </button>
+                </div>
+              )}
+              {recruited && isMaxLevel && (
+                <div className="mt-1.5 pt-1.5 border-t border-rpg-border/30">
+                  <span className="font-pixel text-[6px] text-gold">⭐ Max Level!</span>
+                </div>
+              )}
 
               {/* Financial lesson */}
               {recruited && (
