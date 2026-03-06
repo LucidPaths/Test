@@ -9,6 +9,7 @@ export interface PartyBonuses {
   critBoostBonus: number
   tokenBoostBonus: number
   manaRegenBonus: number
+  hpRegenBonus: number
 }
 
 /** Scale a merc's base DPS by their upgrade level */
@@ -34,6 +35,7 @@ export function getPartyBonuses(partySlots: (string | null)[], mercLevels: Recor
     critBoostBonus: 0,
     tokenBoostBonus: 0,
     manaRegenBonus: 0,
+    hpRegenBonus: 0,
   }
 
   for (const mercId of partySlots) {
@@ -60,6 +62,9 @@ export function getPartyBonuses(partySlots: (string | null)[], mercLevels: Recor
         break
       case 'manaRegen':
         result.manaRegenBonus += abilityVal
+        break
+      case 'hpRegen':
+        result.hpRegenBonus += abilityVal
         break
     }
   }

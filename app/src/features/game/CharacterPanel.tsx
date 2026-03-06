@@ -42,15 +42,12 @@ export function CharacterPanel() {
   return (
     <div className="bg-rpg-panel border border-rpg-border rounded-lg p-3">
       <div className="flex items-center gap-3 mb-3">
-        <div className="relative">
-          <div className="text-3xl animate-idle-bob">{charInfo.emoji}</div>
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-rpg-bg border border-rpg-border rounded px-1">
-            <span className="font-pixel text-[6px] text-gold">Lv.{char.level}</span>
-          </div>
-        </div>
+        <div className="text-3xl animate-idle-bob">{charInfo.emoji}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <span className="font-pixel text-[9px] text-rpg-text">{charInfo.name}</span>
+            <span className="font-pixel text-[9px] text-rpg-text">
+              {charInfo.name} <span className="text-gold">Lv.{char.level}</span>
+            </span>
             <span className="font-pixel text-[7px] text-rpg-muted">
               {simYears > 0 ? `${simYears}J ${simMonths}M` : `${simMonths}M`} | Stufe {stage}
             </span>
